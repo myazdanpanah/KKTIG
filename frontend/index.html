@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نکسیوو | پلتفرم داشبورد هوشمند</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      /* Apply dark class synchronously before React renders to prevent flash */
+      (function() {
+        try {
+          var stored = JSON.parse(localStorage.getItem('nexivo-theme') || '{}');
+          if (stored.state && stored.state.dark) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

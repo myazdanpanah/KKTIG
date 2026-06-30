@@ -1,0 +1,106 @@
+import { useState, useEffect } from 'react'
+import { financeApi } from '../../api/finance'
+import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+
+interface Payer { id: number; code: string; name: string; customer_type: string; balance: number; children_count: number; is_active: boolean }
+
+function formatIRR(n: number) { return new Intl.NumberFormat('fa-IR').format(n) + ' ریال' }
+
+export default function PayersPage() {
+  const [payers, setPayers] = useState<Payer[]>([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editPayer, setEditPayer] = useState<Payer | null>(null)
+  const [form, setForm] = useState({ code: '', name: '', customer_type: 'legal', national_id: '', phone: '', mobile: '', email: '', address: '' })
+
+  const load = () => {
+    setLoading(true)
+    const params: Record<string, string> = {}
+    if (search) params.search = search
+    financeApi.payers(params).then(r => { setPayers(r.data); setLoading(false) }).catch(() => setLoading(false))
+  }
+  useEffect(load, [search])
+
+  const handleSubmit = async () => {
+    try {
+      if (editPayer) { await financeApi.updatePayer(editPayer.id, form) }
+      else { await financeApi.createPayer(form) }
+      setShowForm(false); setEditPayer(null); load()
+    } catch (e) { alert('خطا در ذخیره') }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('آیا از حذف اطمینان دارید؟')) return
+    await financeApi.deletePayer(id); load()
+  }
+
+  return (
+    <div className="p-6 space-y-4" dir="rtl">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">پرداخت‌کنندگان</h1>
+        <button onClick={() => { setShowForm(true); setEditPayer(null); setForm({ code: '', name: '', customer_type: 'legal', national_id: '', phone: '', mobile: '', email: '', address: '' }) }} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition text-sm">
+          <Plus className="w-4 h-4" /> افزودن
+        </button>
+      </div>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="جستجو نام یا کد..." className="w-full pr-10 pl-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" />
+      </div>
+      {/* Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead><tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+            <th className="px-4 py-3 text-right font-medium text-gray-500">کد</th>
+            <th className="px-4 py-3 text-right font-medium text-gray-500">نام</th>
+            <th className="px-4 py-3 text-right font-medium text-gray-500">نوع</th>
+            <th className="px-4 py-3 text-right font-medium text-gray-500">مانده</th>
+            <th className="px-4 py-3 text-right font-medium text-gray-500">عملیات</th>
+          </tr></thead>
+          <tbody>
+            {loading ? <tr><td colSpan={5} className="text-center py-8 text-gray-400">بارگذاری...</td></tr>
+            : payers.length === 0 ? <tr><td colSpan={5} className="text-center py-8 text-gray-400">داده‌ای یافت نشد</td></tr>
+            : payers.map(p => (
+              <tr key={p.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+                <td className="px-4 py-3 font-mono text-xs">{p.code}</td>
+                <td className="px-4 py-3 font-medium">{p.name}</td>
+                <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${p.customer_type === 'legal' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>{p.customer_type === 'legal' ? 'حقوقی' : 'حقیقی'}</span></td>
+                <td className={`px-4 py-3 font-bold ${p.balance > 0 ? 'text-red-600' : p.balance < 0 ? 'text-emerald-600' : 'text-gray-400'}`}>{formatIRR(p.balance)}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { setEditPayer(p); setForm({ code: p.code, name: p.name, customer_type: p.customer_type, national_id: '', phone: '', mobile: '', email: '', address: '' }); setShowForm(true) }} className="p-1 text-gray-400 hover:text-indigo-600"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(p.id)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg mx-4 space-y-4">
+            <h3 className="text-lg font-bold">{editPayer ? 'ویرایش' : 'افزودن'} پرداخت‌کننده</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <input placeholder="کد" value={form.code} onChange={e => setForm({...form, code: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600" />
+              <input placeholder="نام" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600" />
+              <select value={form.customer_type} onChange={e => setForm({...form, customer_type: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
+                <option value="legal">حقوقی</option>
+                <option value="natural">حقیقی</option>
+              </select>
+              <input placeholder="تلفن" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600" />
+              <input placeholder="موبایل" value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600" />
+              <input placeholder="ایمیل" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">لغو</button>
+              <button onClick={handleSubmit} className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">ذخیره</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

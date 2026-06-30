@@ -1,0 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Vazirmatn', Tahoma, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+html[dir="ltr"] {
+  direction: ltr;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Grid layout styles */
+/* Force LTR inside the grid container so react-grid-layout positions items correctly,
+   then flip the whole thing back to RTL with transform */
+.react-grid-layout-wrapper {
+  direction: ltr;
+  text-align: left;
+}
+
+.react-grid-layout {
+  position: relative;
+  transition: height 200ms ease;
+}
+
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+/* Let RGL control dimensions via inline styles — do NOT override with !important */
+.react-grid-item > div {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none !important;
+  z-index: 100;
+  will-change: transform;
+  opacity: 0.92;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.react-grid-placeholder {
+  background-color: #c7d2fe;
+  opacity: 0.35;
+  border-radius: 1rem;
+  border: 2px dashed #6366f1;
+}
+
+/* Resize handle — bigger touch target for mobile */
+.react-resizable-handle {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  z-index: 10;
+  touch-action: none;
+}
+
+.react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 12px;
+  height: 12px;
+  border-right: 3px solid rgba(99, 102, 241, 0.4);
+  border-bottom: 3px solid rgba(99, 102, 241, 0.4);
+  border-radius: 0 0 4px 0;
+  transition: border-color 0.15s;
+}
+
+.react-resizable-handle:hover::after,
+.react-resizable-handle:active::after {
+  border-color: rgba(99, 102, 241, 0.9);
+}
+
+html[dir="rtl"] .react-resizable-handle {
+  right: auto;
+  left: 0;
+  cursor: sw-resize;
+}
+
+html[dir="rtl"] .react-resizable-handle::after {
+  right: auto;
+  left: 4px;
+  border-right: none;
+  border-left: 3px solid rgba(99, 102, 241, 0.4);
+  border-radius: 0 0 0 4px;
+}
+
+html[dir="rtl"] .react-resizable-handle:hover::after,
+html[dir="rtl"] .react-resizable-handle:active::after {
+  border-left-color: rgba(99, 102, 241, 0.9);
+}
+
+/* Drag handle — works on both mobile and desktop */
+.drag-handle {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 767px) {
+  .react-grid-item.react-draggable-dragging {
+    transform: scale(1.02);
+  }
+}
+
+/* Tablet and smaller screens */
+@media (max-width: 1024px) {
+  .react-grid-layout-wrapper {
+    padding: 0 0.5rem;
+  }
+}
+
+/* Ensure charts fill their container properly */
+.react-grid-item > div {
+  width: 100%;
+  height: 100%;
+}
+
+/* Snap-to-grid visual guide — uses ::before so it doesn't hide chart content */
+.react-grid-layout.layout {
+  position: relative;
+}
+
+.react-grid-layout.layout::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent calc(60px - 1px),
+      rgba(99, 102, 241, 0.08) calc(60px - 1px),
+      rgba(99, 102, 241, 0.08) 60px
+    );
+  background-size: 100% 60px;
+  background-position: 0 -1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 0;
+}
+
+/* Show grid lines when any widget is being dragged or resized */
+.react-grid-layout.layout.is-dragging::before {
+  opacity: 1;
+}
+
+/* Highlight row being dragged over */
+.react-grid-item.react-draggable-dragging {
+  z-index: 100;
+}
+
+/* Resize handle visual hint */
+.react-grid-item:hover .react-resizable-handle::after {
+  border-color: rgba(99, 102, 241, 0.7);
+}
+
+/* Smooth snap animation when widgets settle into constrained positions */
+.react-grid-item.react-grid-placeholder {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.react-grid-item:not(.react-draggable-dragging):not(.react-resizable-resizing) {
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              top 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Undo/Redo toast — slide from right */
+@keyframes toast-slide {
+  from { opacity: 0; transform: translateX(100%) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+.toast-undo {
+  animation: toast-slide 0.3s ease-out;
+}
+
+/* Widget card transitions */
+.widget-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.widget-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Toast animation */
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}

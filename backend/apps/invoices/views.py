@@ -1,0 +1,373 @@
+"""Finance module API views."""
+
+from django.db import models as db_models
+from django.db import transaction
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from .models import (
+    Payer, ItemType, ItemTypeField, Invoice, LineItem, ItemFieldValue,
+    Payment, ManualDebt, Credit, LetterSequence, ApprovalRequest, GeneratedFile,
+)
+from .serializers import (
+    PayerSerializer, ItemTypeSerializer, ItemTypeFieldSerializer,
+    InvoiceSerializer, InvoiceListSerializer, LineItemSerializer,
+    PaymentSerializer, ManualDebtSerializer, CreditSerializer,
+    ApprovalRequestSerializer, GeneratedFileSerializer,
+)
+from .permissions import finance_permission, get_user_company
+from .utils import today_jalali
+
+
+def _company(user):
+    return get_user_company(user)
+
+
+# ---- Payer CRUD ----
+
+@api_view(['GET', 'POST'])
+@finance_permission('can_manage_payers')
+def payer_list_create(request):
+    company = _company(request.user)
+    if request.method == 'GET':
+        payers = Payer.objects.filter(company=company)
+        parent_id = request.query_params.get('parent')
+        root_only = request.query_params.get('root_only')
+        if parent_id:
+            payers = payers.filter(parent_id=parent_id)
+        elif root_only == 'true':
+            payers = payers.filter(parent__isnull=True)
+        search = request.query_params.get('search')
+        if search:
+            payers = payers.filter(
+                db_models.Q(name__icontains=search) | db_models.Q(code__icontains=search)
+            )
+        return Response(PayerSerializer(payers, many=True).data)
+    elif request.method == 'POST':
+        serializer = PayerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(company=company)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@finance_permission('can_manage_payers')
+def payer_detail(request, pk):
+    company = _company(request.user)
+    try:
+        payer = Payer.objects.get(pk=pk, company=company)
+    except Payer.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if request.method == 'GET':
+        return Response(PayerSerializer(payer).data)
+    elif request.method == 'PUT':
+        serializer = PayerSerializer(payer, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        payer.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@finance_permission('can_manage_payers')
+def payer_tree(request):
+    """Return the full payer hierarchy tree."""
+    company = _company(request.user)
+    roots = Payer.objects.filter(company=company, parent__isnull=True)
+    def build_tree(payer):
+        children = Payer.objects.filter(company=company, parent=payer)
+        return {
+            'id': payer.id,
+            'code': payer.code,
+            'name': payer.name,
+            'balance': payer.balance,
+            'children': [build_tree(c) for c in children],
+        }
+    return Response([build_tree(p) for p in roots])
+
+
+# ---- ItemType CRUD ----
+
+@api_view(['GET', 'POST'])
+@finance_permission('can_manage_settings')
+def itemtype_list_create(request):
+    company = _company(request.user)
+    if request.method == 'GET':
+        types = ItemType.objects.filter(company=company)
+        return Response(ItemTypeSerializer(types, many=True).data)
+    elif request.method == 'POST':
+        serializer = ItemTypeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(company=company)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@finance_permission('can_manage_settings')
+def itemtype_detail(request, pk):
+    company = _company(request.user)
+    try:
+        item_type = ItemType.objects.get(pk=pk, company=company)
+    except ItemType.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if request.method == 'GET':
+        return Response(ItemTypeSerializer(item_type).data)
+    elif request.method == 'PUT':
+        serializer = ItemTypeSerializer(item_type, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        item_type.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@finance_permission('can_manage_settings')
+def itemtype_fields(request, pk):
+    """Bulk-set fields for an ItemType."""
+    company = _company(request.user)
+    try:
+        item_type = ItemType.objects.get(pk=pk, company=company)
+    except ItemType.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    fields_data = request.data.get('fields', [])
+    item_type.fields.all().delete()
+    for i, f in enumerate(fields_data):
+        ItemTypeField.objects.create(
+            item_type=item_type,
+            key=f['key'],
+            label=f['label'],
+            field_type=f.get('field_type', 'text'),
+            options=f.get('options', []),
+            required=f.get('required', False),
+            display_order=f.get('display_order', i),
+        )
+    return Response(ItemTypeSerializer(item_type).data)
+
+
+# ---- Invoice CRUD ----
+
+@api_view(['GET', 'POST'])
+@finance_permission('can_issue')
+def invoice_list_create(request):
+    company = _company(request.user)
+    if request.method == 'GET':
+        invoices = Invoice.objects.filter(company=company).select_related('payer', 'invoice_type', 'created_by')
+        payer_id = request.query_params.get('payer')
+        status_filter = request.query_params.get('status')
+        if payer_id:
+            invoices = invoices.filter(payer_id=payer_id)
+        if status_filter:
+            invoices = invoices.filter(status=status_filter)
+        return Response(InvoiceListSerializer(invoices, many=True).data)
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['company'] = company.id
+        data['created_by'] = request.user.id
+        # Auto-generate letter number if not provided
+        if not data.get('letter_number'):
+            payer_id = data.get('payer')
+            payer = Payer.objects.get(pk=payer_id, company=company)
+            from .utils import today_jalali
+            jy, _, _ = today_jalali()
+            year_2digit = str(jy)[-2:]
+            data['letter_number'] = LetterSequence.reserve_next(company, payer, year_2digit)
+        serializer = InvoiceSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@finance_permission('can_issue')
+def invoice_detail(request, pk):
+    company = _company(request.user)
+    try:
+        invoice = Invoice.objects.select_related('payer', 'invoice_type', 'created_by').prefetch_related('items', 'items__field_values').get(pk=pk, company=company)
+    except Invoice.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if request.method == 'GET':
+        return Response(InvoiceSerializer(invoice).data)
+    elif request.method == 'PUT':
+        if invoice.status in ('approved',):
+            return Response({'error': 'Cannot edit approved invoice'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = InvoiceSerializer(invoice, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        if invoice.status == 'approved':
+            return Response({'error': 'Cannot delete approved invoice'}, status=status.HTTP_400_BAD_REQUEST)
+        invoice.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@finance_permission('can_issue')
+def invoice_add_item(request, pk):
+    company = _company(request.user)
+    try:
+        invoice = Invoice.objects.get(pk=pk, company=company)
+    except Invoice.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if invoice.status == 'approved':
+        return Response({'error': 'Cannot modify approved invoice'}, status=status.HTTP_400_BAD_REQUEST)
+    data = request.data.copy()
+    data['invoice'] = invoice.id
+    data['order'] = invoice.items.count()
+    serializer = LineItemSerializer(data=data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'POST'])
+@finance_permission('can_pay')
+def payment_list_create(request):
+    company = _company(request.user)
+    if request.method == 'GET':
+        payments = Payment.objects.filter(company=company).select_related('payer', 'registered_by')
+        payer_id = request.query_params.get('payer')
+        if payer_id:
+            payments = payments.filter(payer_id=payer_id)
+        return Response(PaymentSerializer(payments, many=True).data)
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['company'] = company.id
+        data['registered_by'] = request.user.id
+        serializer = PaymentSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['DELETE'])
+@finance_permission('can_delete_payment')
+def payment_delete(request, pk):
+    company = _company(request.user)
+    try:
+        payment = Payment.objects.get(pk=pk, company=company)
+    except Payment.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    payment.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET', 'POST'])
+@finance_permission('can_issue')
+def manualdebt_list_create(request):
+    company = _company(request.user)
+    if request.method == 'GET':
+        debts = ManualDebt.objects.filter(company=company).select_related('payer')
+        payer_id = request.query_params.get('payer')
+        if payer_id:
+            debts = debts.filter(payer_id=payer_id)
+        return Response(ManualDebtSerializer(debts, many=True).data)
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['company'] = company.id
+        serializer = ManualDebtSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'POST'])
+@finance_permission('can_issue')
+def credit_list_create(request):
+    company = _company(request.user)
+    if request.method == 'GET':
+        credits = Credit.objects.filter(company=company).select_related('payer')
+        payer_id = request.query_params.get('payer')
+        if payer_id:
+            credits = credits.filter(payer_id=payer_id)
+        return Response(CreditSerializer(credits, many=True).data)
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['company'] = company.id
+        serializer = CreditSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'POST'])
+@finance_permission('can_submit')
+def approval_list_create(request):
+    company = _company(request.user)
+    if request.method == 'GET':
+        reqs = ApprovalRequest.objects.filter(company=company).select_related('payer', 'requester', 'approved_by')
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            reqs = reqs.filter(status=status_filter)
+        return Response(ApprovalRequestSerializer(reqs, many=True).data)
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['company'] = company.id
+        data['requester'] = request.user.id
+        serializer = ApprovalRequestSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@finance_permission('can_approve')
+def approval_action(request, pk, action):
+    company = _company(request.user)
+    try:
+        approval = ApprovalRequest.objects.get(pk=pk, company=company)
+    except ApprovalRequest.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if approval.status != 'pending':
+        return Response({'error': 'Request already processed'}, status=status.HTTP_400_BAD_REQUEST)
+    if action == 'approve':
+        approval.status = 'approved'
+        approval.approved_by = request.user
+        approval.approved_at = timezone.now()
+        approval.final_letter_number = approval.letter_number
+    elif action == 'reject':
+        approval.status = 'rejected'
+        approval.rejection_reason = request.data.get('reason', '')
+        approval.approved_by = request.user
+        approval.approved_at = timezone.now()
+    else:
+        return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+    approval.save()
+    return Response(ApprovalRequestSerializer(approval).data)
+
+
+@api_view(['GET'])
+@finance_permission('can_view_finance')
+def finance_dashboard(request):
+    company = _company(request.user)
+    from datetime import date
+    today = date.today()
+    month_start = today.replace(day=1)
+    invoices = Invoice.objects.filter(company=company)
+    payments = Payment.objects.filter(company=company)
+    payers = Payer.objects.filter(company=company)
+    total_receivable = sum(p.balance for p in payers if p.balance > 0)
+    total_invoiced = sum(inv.amount for inv in invoices)
+    total_paid = sum(p.amount for p in payments)
+    monthly_invoiced = sum(inv.amount for inv in invoices.filter(issue_date__gte=month_start))
+    monthly_paid = sum(p.amount for p in payments.filter(payment_date__gte=month_start))
+    pending_approvals = ApprovalRequest.objects.filter(company=company, status='pending').count()
+    top_debtors = [{'name': p.name, 'code': p.code, 'balance': p.balance} for p in sorted(payers, key=lambda x: x.balance, reverse=True)[:10] if p.balance > 0]
+    return Response({
+        'total_receivable': total_receivable,
+        'total_invoiced': total_invoiced,
+        'total_paid': total_paid,
+        'monthly_invoiced': monthly_invoiced,
+        'monthly_paid': monthly_paid,
+        'pending_approvals': pending_approvals,
+        'total_payers': payers.count(),
+        'total_invoices': invoices.count(),
+        'top_debtors': top_debtors,
+    })
