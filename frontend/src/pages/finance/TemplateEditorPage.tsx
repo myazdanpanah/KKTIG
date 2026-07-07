@@ -9,17 +9,34 @@ export default function TemplateEditorPage() {
   const [css, setCss] = useState('')
   const [showPreview, setShowPreview] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [sourceMode, setSourceMode] = useState(false)
   const editorRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const initializedRef = useRef(false)
 
   useEffect(() => {
     financeApi.getActiveTemplate().then(r => {
-      setHtml(r.data.html || getDefaultHtml())
-      setCss(r.data.css || getDefaultCss())
+      const initialHtml = r.data.html || getDefaultHtml()
+      const initialCss = r.data.css || getDefaultCss()
+      setHtml(initialHtml)
+      setCss(initialCss)
+      if (editorRef.current && !initializedRef.current) {
+        editorRef.current.innerHTML = initialHtml
+        initializedRef.current = true
+      }
+      setLoading(false)
     }).catch(() => {
-      setHtml(getDefaultHtml())
-      setCss(getDefaultCss())
+      const initialHtml = getDefaultHtml()
+      const initialCss = getDefaultCss()
+      setHtml(initialHtml)
+      setCss(initialCss)
+      if (editorRef.current && !initializedRef.current) {
+        editorRef.current.innerHTML = initialHtml
+        initializedRef.current = true
+      }
+      setLoading(false)
     })
   }, [])
 
@@ -78,9 +95,13 @@ body { font-family: 'B Nazanin', Tahoma, Arial, sans-serif; font-size: 9px; line
 
   const handleSave = async () => {
     setSaving(true)
+    setError(null)
     try {
       await financeApi.saveActiveTemplate({ html, css, settings: {} })
-    } catch { /* ignore */ }
+    } catch (err) {
+      setError('خطا در ذخیره قالب. لطفاً دوباره تلاش کنید.')
+      setTimeout(() => setError(null), 5000)
+    }
     setSaving(false)
   }
 
@@ -136,6 +157,14 @@ body { font-family: 'B Nazanin', Tahoma, Arial, sans-serif; font-size: 9px; line
         <button onClick={() => execCmd('removeFormat')} className="px-2 py-1 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 rounded">🧹</button>
       </div>
 
+      {loading && (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+          <span className="mr-3 text-gray-500">{t('loading')}</span>
+        </div>
+      )}
+
+      {!loading && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Editor */}
         <div className="border rounded-xl overflow-hidden dark:border-gray-700">
@@ -156,7 +185,6 @@ body { font-family: 'B Nazanin', Tahoma, Arial, sans-serif; font-size: 9px; line
               contentEditable
               suppressContentEditableWarning
               onInput={handleEditorInput}
-              dangerouslySetInnerHTML={{ __html: html }}
               className="h-96 p-4 overflow-y-auto bg-white dark:bg-gray-900 outline-none text-sm"
               dir="rtl"
               style={{ fontFamily: "'B Nazanin', Tahoma" }}
@@ -177,9 +205,10 @@ body { font-family: 'B Nazanin', Tahoma, Arial, sans-serif; font-size: 9px; line
           />
         </div>
       </div>
+      )}
 
       {/* Preview */}
-      {showPreview && (
+      {!loading && showPreview && (
         <div className="border rounded-xl overflow-hidden dark:border-gray-700">
           <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 text-xs font-medium text-gray-500 border-b dark:border-gray-700 flex items-center justify-between">
             <span>{t('finTemplatePreview')}</span>
@@ -194,6 +223,7 @@ body { font-family: 'B Nazanin', Tahoma, Arial, sans-serif; font-size: 9px; line
       )}
 
       {/* Variable Reference */}
+      {!loading && (
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-xs text-blue-700 dark:text-blue-300">
         <h4 className="font-bold mb-2">{t('finTemplateVariables')}</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -211,6 +241,15 @@ body { font-family: 'B Nazanin', Tahoma, Arial, sans-serif; font-size: 9px; line
           <code>{'{{ seller.manager_position }}'}</code>
         </div>
       </div>
+      )}
+
+      {/* Error Toast */}
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="ml-2 text-red-500 hover:text-red-700">✕</button>
+        </div>
+      )}
     </div>
   )
 }
