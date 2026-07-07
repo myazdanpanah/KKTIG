@@ -49,8 +49,8 @@ interface UserOption {
   role: string
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  ceo: 'CEO', finance: 'Finance', sales: 'Sales', admin: 'Admin',
+function getRoleLabels(t: (k: 'roleCeo' | 'roleFinance' | 'roleSales' | 'roleAdmin') => string): Record<string, string> {
+  return { ceo: t('roleCeo'), finance: t('roleFinance'), sales: t('roleSales'), admin: t('roleAdmin') }
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -63,6 +63,7 @@ export default function OrganizationPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const ROLE_LABELS = getRoleLabels(t)
 
   const [tree, setTree] = useState<Company[]>([])
   const [users, setUsers] = useState<UserOption[]>([])
@@ -182,7 +183,7 @@ export default function OrganizationPage() {
           </div>
           <button onClick={() => openCreate('company')} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition text-sm font-medium">
             <Building2 className="w-4 h-4" />
-            {t('orgPageTitle')}
+            {t('orgPageAddUnit')}
           </button>
         </div>
       </header>
