@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useTranslation } from '../../utils/i18n'
+import LanguageSwitcher from '../../components/LanguageSwitcher'
 import { LayoutDashboard, Users, FileText, CreditCard, AlertTriangle, CheckCircle, Settings, BookOpen, ArrowRightLeft, LogOut, X } from 'lucide-react'
 
 export default function FinanceShell() {
@@ -38,13 +39,13 @@ export default function FinanceShell() {
       <aside className={`${collapsed ? 'w-16' : 'w-60'} bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-          {!collapsed && <h2 className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{t('financeTitle')}</h2>}
+          {!collapsed && <div className="flex items-center justify-between"><h2 className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{t('financeTitle')}</h2><LanguageSwitcher /></div>}
           <button
             onClick={() => navigate('/')}
             className="mt-2 flex items-center gap-2 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700 rounded-lg transition w-full"
           >
             <ArrowRightLeft className="w-3.5 h-3.5" />
-            {!collapsed && t('switchModule')}
+            {!collapsed && <span>{t('switchModule')}</span>}
           </button>
         </div>
         {/* Nav */}
