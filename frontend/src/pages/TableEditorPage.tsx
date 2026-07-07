@@ -7,6 +7,7 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
+import { useTranslation } from '../utils/i18n'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -29,6 +30,7 @@ export default function TableEditorPage() {
   const [saving, setSaving] = useState(false)
   const [pendingChanges, setPendingChanges] = useState<Array<Record<string, unknown>>>([])
   const { toast } = useToast()
+  const { t } = useTranslation()
   const pageSize = 100
 
   const loadData = useCallback(async () => {
@@ -56,7 +58,7 @@ export default function TableEditorPage() {
         }))
       )
     } catch {
-      toast('خطا در بارگذاری داده‌ها', 'error')
+      toast(t('tableEditorLoadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -98,10 +100,10 @@ export default function TableEditorPage() {
         await api.patch(`/db-manager/tables/${source}/${table}/batch/`, { updates })
       }
       setPendingChanges([])
-      toast(`${updates.length} سلول ذخیره شد`, 'success')
+      toast(t('tableEditorSaved') + ' (' + updates.length + ')', 'success')
       loadData()
     } catch {
-      toast('خطا در ذخیره تغییرات', 'error')
+      toast(t('tableEditorSaveError'), 'error')
     } finally {
       setSaving(false)
     }
@@ -110,7 +112,7 @@ export default function TableEditorPage() {
   const totalPages = Math.ceil(totalCount / pageSize)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="max-w-full mx-auto flex items-center justify-between">
@@ -121,7 +123,7 @@ export default function TableEditorPage() {
             <div>
               <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{table}</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {source === 'local' ? 'Nexivo' : 'خارجی'} · {totalCount.toLocaleString()} ردیف · {schema.length} ستون
+                {source === 'local' ? 'Nexivo' : t('tableEditorExternal')} · {totalCount.toLocaleString()} {t('tableEditorRows')} · {schema.length} {t('tableEditorColumns')}
               </p>
             </div>
           </div>
@@ -131,14 +133,14 @@ export default function TableEditorPage() {
               className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
             >
               <Settings className="w-4 h-4" />
-              اسکیما
+              {t('tableEditorSchema')}
             </Link>
             <Link
               to={`/db-manager/table/${source}/${table}/import`}
               className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
             >
               <Download className="w-4 h-4" />
-              وارد کردن
+              {t('tableEditorImport')}
             </Link>
             {pendingChanges.length > 0 && (
               <button
@@ -147,13 +149,13 @@ export default function TableEditorPage() {
                 className="flex items-center gap-2 px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50"
               >
                 {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
-                ذخیره ({pendingChanges.length})
+                {t('tableEditorSave')} ({pendingChanges.length})
               </button>
             )}
             <button
               onClick={loadData}
               className="p-2 text-gray-400 hover:text-indigo-600 transition"
-              title="بازخوانی"
+              title={t('tableEditorRefresh')}
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -192,7 +194,7 @@ export default function TableEditorPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              صفحه {page + 1} از {totalPages} · {totalCount.toLocaleString()} ردیف
+              {t('tableEditorPage')} {page + 1} {t('tableEditorFrom')} {totalPages} · {totalCount.toLocaleString()} {t('tableEditorRows')}
             </div>
             <div className="flex items-center gap-2">
               <button

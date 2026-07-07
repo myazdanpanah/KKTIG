@@ -16,6 +16,7 @@ import SqlEditorPage from './pages/SqlEditorPage'
 import FileImportPage from './pages/FileImportPage'
 import ExternalDbPage from './pages/ExternalDbPage'
 import SheetsSyncPage from './pages/SheetsSyncPage'
+import SettingsPage from './pages/SettingsPage'
 import { FinanceShell, FinanceDashboard, PayersPage, InvoicesPage, PaymentsPage, DebtsCreditsPage, ApprovalsPage, ItemTypesPage, FinanceSettingsPage } from './pages/finance'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="templates" element={<ItemTypesPage />} />
         <Route path="settings" element={<FinanceSettingsPage />} />
       </Route>
+      <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

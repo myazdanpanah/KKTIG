@@ -4,8 +4,10 @@ import { useDropzone } from 'react-dropzone'
 import { useAuthStore } from '../store/authStore'
 import api from '../api/client'
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react'
+import { useTranslation } from '../utils/i18n'
 
 export default function DataUploadPage() {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -46,7 +48,6 @@ export default function DataUploadPage() {
       formData.append('name', name)
       formData.append('description', description)
 
-      // Default allowed roles based on user role
       const allowedRoles = user?.role === 'ceo'
         ? ['finance', 'sales', 'ceo']
         : [user?.role || 'ceo']
@@ -59,7 +60,7 @@ export default function DataUploadPage() {
       setSuccess(true)
       setTimeout(() => navigate('/dashboards'), 2000)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'خطا در بارگذاری فایل'
+      const message = err instanceof Error ? err.message : t('uploadError')
       setError(message)
     } finally {
       setUploading(false)
@@ -67,11 +68,11 @@ export default function DataUploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">بارگذاری داده</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">فایل اکسل یا CSV خود را آپلود کنید</p>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('uploadTitle')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('uploadSubtitle')}</p>
         </div>
       </header>
 
@@ -80,13 +81,12 @@ export default function DataUploadPage() {
           <div className="text-center py-16">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              فایل با موفقیت بارگذاری شد
+              {t('uploadSuccess')}
             </h3>
-            <p className="text-gray-500">در حال انتقال به داشبوردها...</p>
+            <p className="text-gray-500">{t('uploadRedirecting')}</p>
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Dropzone */}
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition ${
@@ -110,41 +110,38 @@ export default function DataUploadPage() {
                 <>
                   <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2">
-                    فایل را اینجا رها کنید یا کلیک کنید
+                    {t('uploadDropzone')}
                   </p>
                   <p className="text-sm text-gray-400">
-                    فرمت‌های پشتیبانی شده: .xlsx, .xls, .csv
+                    {t('uploadFormats')}
                   </p>
                 </>
               )}
             </div>
 
-            {/* Form */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  نام مجموعه داده
+                  {t('uploadDatasetName')}
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-                  placeholder="مثال: گزارش فروش فروردین"
-                  dir="rtl"
+                  placeholder={t('uploadDatasetPlaceholder')}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  توضیحات (اختیاری)
+                  {t('uploadDescription')}
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
                   rows={3}
-                  placeholder="توضیحاتی درباره این مجموعه داده"
-                  dir="rtl"
+                  placeholder={t('uploadDescriptionPlaceholder')}
                 />
               </div>
 
@@ -160,7 +157,7 @@ export default function DataUploadPage() {
                 disabled={!file || !name || uploading}
                 className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {uploading ? 'در حال بارگذاری...' : 'بارگذاری و پردازش'}
+                {uploading ? t('uploadUploading') : t('uploadSubmit')}
               </button>
             </div>
           </div>

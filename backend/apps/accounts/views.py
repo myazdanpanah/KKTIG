@@ -68,7 +68,10 @@ def profile_view(request):
 @api_view(["PUT"])
 def profile_update_view(request):
     """Update current user profile."""
-    serializer = UserSerializer(request.user, data=request.data, partial=True)
+    # Only allow users to update safe fields on their own profile
+    SAFE_FIELDS = ["first_name", "last_name", "email", "last_module"]
+    restricted_data = {k: v for k, v in request.data.items() if k in SAFE_FIELDS}
+    serializer = UserSerializer(request.user, data=restricted_data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(serializer.data)
@@ -141,6 +144,7 @@ def user_detail_view(request, pk):
         allowed_fields = [
             "username", "email", "first_name", "last_name", "role", "department",
             "company", "division", "team", "reports_to",
+            "last_module", "nexivo_access", "finance_access",
         ]
         for field in allowed_fields:
             if field in serializer.validated_data:

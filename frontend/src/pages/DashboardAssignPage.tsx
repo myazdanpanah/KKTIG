@@ -5,6 +5,7 @@ import api from '../api/client'
 import { useToast } from '../components/Toast'
 import { ArrowRight, UserPlus, Trash2, Pencil, X, Shield, Filter, Eye, ChevronDown, ChevronUp, Users, Check } from 'lucide-react'
 import ThemeToggle from '../components/ThemeToggle'
+import { useTranslation } from '../utils/i18n'
 
 interface Dashboard {
   id: number
@@ -75,6 +76,7 @@ export default function DashboardAssignPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [dashboards, setDashboards] = useState<Dashboard[]>([])
@@ -134,7 +136,7 @@ export default function DashboardAssignPage() {
       setDashboards(dashRes.data)
       setUsers(userRes.data)
     } catch {
-      toast('خطا در دریافت اطلاعات', 'error')
+      toast(t('builderFetchError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -168,7 +170,7 @@ export default function DashboardAssignPage() {
 
   const handleSubmit = async () => {
     if (!form.dashboard || !form.assigned_to) {
-      toast('انتخاب داشبورد و کاربر الزامی است', 'error')
+      toast(t('adminFormRequiredField'), 'error')
       return
     }
 
@@ -187,13 +189,13 @@ export default function DashboardAssignPage() {
         toast('تخصیص به‌روزرسانی شد', 'success')
       } else {
         await api.post('/dashboards/assignments/', payload)
-        toast('تخصیص جدید ایجاد شد', 'success')
+        toast(t('dashboardCreated'), 'success')
       }
       setShowModal(false)
       fetchData()
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } }
-      toast(axiosErr.response?.data?.error || 'خطا در ذخیره', 'error')
+      toast(axiosErr.response?.data?.error || t('adminFormSaveError'), 'error')
     }
   }
 
@@ -201,10 +203,10 @@ export default function DashboardAssignPage() {
     if (!window.confirm(`آیا از حذف تخصیص «${assignment.dashboard_name}» برای «${assignment.assigned_to_name || assignment.assigned_to_username}» اطمینان دارید؟`)) return
     try {
       await api.delete(`/dashboards/assignments/${assignment.id}/`)
-      toast('تخصیص حذف شد', 'success')
+      toast(t('dashboardDeleted'), 'success')
       fetchData()
     } catch {
-      toast('خطا در حذف تخصیص', 'error')
+      toast(t('deleteError'), 'error')
     }
   }
 
@@ -245,7 +247,7 @@ export default function DashboardAssignPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -258,8 +260,8 @@ export default function DashboardAssignPage() {
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">تخصیص داشبورد</h1>
-                <p className="text-xs text-gray-500">تعریف دسترسی کارکنان به داشبوردها با فیلترهای داده خاص</p>
+                <h1 className="text-lg font-bold text-gray-900">{t('assignments')}</h1>
+                <p className="text-xs text-gray-500">{t('filterBarFilters')}</p>
               </div>
             </div>
           </div>            <div className="flex items-center gap-2">
@@ -269,14 +271,14 @@ export default function DashboardAssignPage() {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm font-medium"
             >
               <Users className="w-4 h-4" />
-              تخصیص گروهی
+              {t('filterBarFilters')} {t('filterBarTextSearch')}
             </button>
             <button
               onClick={openCreateModal}
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition text-sm font-medium"
             >
               <UserPlus className="w-4 h-4" />
-              تخصیص جدید
+              {t('dashAssignContains')} {t('dashAssignIn')}
             </button>
           </div>
         </div>
@@ -742,7 +744,7 @@ export default function DashboardAssignPage() {
               <button onClick={() => setShowBulkModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition">انصراف</button>
               <button
                 onClick={async () => {                    if (!bulkForm.dashboard || (bulkForm.target_type === 'company' && !bulkForm.company_id) || (bulkForm.target_type === 'team' && !bulkForm.team_id) || (bulkForm.target_type === 'division' && !bulkForm.division_id)) {
-                      toast('لطفاً تمام فیلدها را پر کنید', 'error')
+                      toast(t('adminFormRequiredField'), 'error')
                       return
                     }
                     try {
@@ -760,7 +762,7 @@ export default function DashboardAssignPage() {
                     fetchData()
                   } catch (err: unknown) {
                     const axiosErr = err as { response?: { data?: { error?: string } } }
-                    toast(axiosErr.response?.data?.error || 'خطا در تخصیص گروهی', 'error')
+                    toast(axiosErr.response?.data?.error || t('adminFormSaveError'), 'error')
                   }
                 }}
                 className="px-6 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition font-medium flex items-center gap-2"

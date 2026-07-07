@@ -4,6 +4,7 @@ import { Database, Table, Server, Plus, RefreshCw, Search, ChevronRight, HardDri
 import api from '../api/client'
 import { useToast } from '../components/Toast'
 import { useAuthStore } from '../store/authStore'
+import { useTranslation } from '../utils/i18n'
 
 interface DatabaseEntry {
   id: number
@@ -19,6 +20,7 @@ interface DatabaseEntry {
 }
 
 export default function DatabaseManagerPage() {
+  const { t } = useTranslation()
   const [databases, setDatabases] = useState<DatabaseEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -36,7 +38,7 @@ export default function DatabaseManagerPage() {
       const res = await api.get('/db-manager/databases/')
       setDatabases(res.data)
     } catch {
-      toast('خطا در بارگذاری پایگاه‌داده‌ها', 'error')
+      toast(t('dbLoadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -53,8 +55,7 @@ export default function DatabaseManagerPage() {
   const externalDbs = filtered.filter((d) => d.type === 'external')
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -62,7 +63,7 @@ export default function DatabaseManagerPage() {
               <ChevronRight className="w-5 h-5" />
             </Link>
             <Database className="w-6 h-6 text-indigo-600" />
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">مدیریت پایگاه‌داده</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('dbTitle')}</h1>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -83,7 +84,7 @@ export default function DatabaseManagerPage() {
                 className="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
               >
                 <Server className="w-4 h-4" />
-                اتصالات خارجی
+                {t('dbExternalConnections')}
               </Link>
             )}
             <Link
@@ -91,19 +92,18 @@ export default function DatabaseManagerPage() {
               className="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
             >
               <Plus className="w-4 h-4" />
-              وارد کردن فایل
+              {t('dbImportFile')}
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Search bar */}
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="جستجو در جداول و پایگاه‌داده‌ها..."
+            placeholder={t('dbSearch')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pr-10 pl-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
@@ -111,55 +111,53 @@ export default function DatabaseManagerPage() {
           <button
             onClick={loadDatabases}
             className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-indigo-600 transition"
-            title="بازخوانی"
+            title={t('dbRefresh')}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Content */}
       <main className="max-w-7xl mx-auto px-6 pb-8">
         {loading ? (
           <div className="text-center py-20">
             <RefreshCw className="w-8 h-8 text-gray-400 mx-auto animate-spin mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">در حال بارگذاری...</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('loading')}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             <Database className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              {search ? 'نتیجه‌ای یافت نشد' : 'پایگاه‌داده‌ای وجود ندارد'}
+              {search ? t('dbNoResults') : t('dbNoDatabases')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              فایلی وارد کنید یا اتصال خارجی اضافه کنید
+              {t('dbImportOrConnect')}
             </p>
             <div className="flex items-center justify-center gap-3">
               <Link
                 to="/db-manager/import"
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
               >
-                وارد کردن فایل
+                {t('dbImportFile')}
               </Link>
               {isAdmin && (
                 <Link
                   to="/db-manager/connections"
                   className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium"
                 >
-                  افزودن اتصال خارجی
+                  {t('dbAddConnection')}
                 </Link>
               )}
             </div>
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Local Tables (Nexivo datasets) */}
             {localTables.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <HardDrive className="w-5 h-5 text-indigo-600" />
                   <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                    جداول Nexivo
+                    {t('dbNexivoTables')}
                   </h2>
                   <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
                     {localTables.length}
@@ -187,7 +185,7 @@ export default function DatabaseManagerPage() {
                           </span>
                         </div>
                         {db.row_count !== undefined && (
-                          <div>{db.row_count.toLocaleString()} ردیف · {db.column_count} ستون</div>
+                          <div>{db.row_count.toLocaleString()} {t('dbRows')} · {db.column_count} {t('dbColumns')}</div>
                         )}
                       </div>
                     </Link>
@@ -196,13 +194,12 @@ export default function DatabaseManagerPage() {
               </section>
             )}
 
-            {/* External Databases */}
             {externalDbs.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <Server className="w-5 h-5 text-emerald-600" />
                   <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                    پایگاه‌داده‌های خارجی
+                    {t('dbExternalDatabases')}
                   </h2>
                   <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
                     {externalDbs.length}
@@ -223,6 +220,7 @@ export default function DatabaseManagerPage() {
 }
 
 function ExternalDbCard({ db }: { db: DatabaseEntry }) {
+  const { t } = useTranslation()
   const [tables, setTables] = useState<string[]>([])
   const [expanded, setExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -236,7 +234,7 @@ function ExternalDbCard({ db }: { db: DatabaseEntry }) {
       setTables(res.data)
       setExpanded(true)
     } catch {
-      toast('خطا در بارگذاری جداول', 'error')
+      toast(t('dbTablesLoadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -266,13 +264,13 @@ function ExternalDbCard({ db }: { db: DatabaseEntry }) {
       </button>
       {expanded && tables.length > 0 && (
         <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 max-h-60 overflow-y-auto space-y-1">
-          {tables.map((t) => (
+          {tables.map((tbl) => (
             <Link
-              key={t}
-              to={`/db-manager/table/${db.source}/${t}`}
+              key={tbl}
+              to={`/db-manager/table/${db.source}/${tbl}`}
               className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition"
             >
-              {t}
+              {tbl}
             </Link>
           ))}
         </div>

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Bell, Check, CheckCheck, X } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from './Toast'
+import { useSettingsStore } from '../store/settingsStore'
+import { useTranslation } from '../utils/i18n'
 
 interface Notification {
   id: number
@@ -21,13 +23,15 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const ref = useRef<HTMLDivElement>(null)
+  const notificationsEnabled = useSettingsStore((s) => s.notifications)
+  const { t } = useTranslation()
 
   useEffect(() => {
+    if (!notificationsEnabled) return
     fetchNotifications()
-    // Poll every 30s
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [notificationsEnabled])
 
   useEffect(() => {
     if (!open) return
@@ -58,7 +62,7 @@ export default function NotificationBell() {
       )
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch {
-      toast('خطا در علامت‌گذاری', 'error')
+      toast(t('markReadError'), 'error')
     }
   }
 
@@ -67,9 +71,9 @@ export default function NotificationBell() {
       await api.post('/dashboards/notifications/read-all/')
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
       setUnreadCount(0)
-      toast('همه اعلان‌ها خوانده شد', 'success')
+      toast(t('markAllSuccess'), 'success')
     } catch {
-      toast('خطا در علامت‌گذاری', 'error')
+      toast(t('markReadError'), 'error')
     }
   }
 
@@ -86,11 +90,13 @@ export default function NotificationBell() {
     const now = Date.now()
     const then = new Date(dateStr).getTime()
     const diff = Math.floor((now - then) / 1000)
-    if (diff < 60) return 'همین الان'
-    if (diff < 3600) return `${Math.floor(diff / 60)} دقیقه پیش`
-    if (diff < 86400) return `${Math.floor(diff / 3600)} ساعت پیش`
-    return `${Math.floor(diff / 86400)} روز پیش`
+    if (diff < 60) return t('justNow')
+    if (diff < 3600) return `${Math.floor(diff / 60)} ${t('minutesAgo')}`
+    if (diff < 86400) return `${Math.floor(diff / 3600)} ${t('hoursAgo')}`
+    return `${Math.floor(diff / 86400)} ${t('daysAgo')}`
   }
+
+  if (!notificationsEnabled) return null
 
   return (
     <div className="relative" ref={ref}>
@@ -103,7 +109,7 @@ export default function NotificationBell() {
           }
         }}
         className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition"
-        title="اعلان‌ها"
+        title={t('notificationsTitle')}
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
@@ -114,9 +120,9 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden" dir="rtl">
+        <div className="absolute top-full left-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">اعلان‌ها</h3>
+            <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">{t('notificationsTitle')}</h3>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
@@ -124,7 +130,7 @@ export default function NotificationBell() {
                   className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
-                  همه خوانده شد
+                  {t('markAllRead')}
                 </button>
               )}
               <button onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -135,11 +141,11 @@ export default function NotificationBell() {
 
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="p-8 text-center text-gray-400 text-sm">در حال بارگذاری...</div>
+              <div className="p-8 text-center text-gray-400 text-sm">{t('notificationsLoading')}</div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
                 <Bell className="w-10 h-10 text-gray-200 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">اعلانی وجود ندارد</p>
+                <p className="text-sm text-gray-400">{t('noNotifications')}</p>
               </div>
             ) : (
               notifications.map((n) => (
@@ -160,7 +166,8 @@ export default function NotificationBell() {
                         {!n.is_read && (
                           <span className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0" />
                         )}
-                      </div>                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{n.message}</p>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{n.message}</p>
                       <p className="text-[10px] text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
                     </div>
                     {!n.is_read && (
@@ -170,7 +177,7 @@ export default function NotificationBell() {
                           markAsRead(n.id)
                         }}
                         className="p-1 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded transition flex-shrink-0"
-                        title="خوانده شد"
+                        title={t('markAsRead')}
                       >
                         <Check className="w-3.5 h-3.5" />
                       </button>

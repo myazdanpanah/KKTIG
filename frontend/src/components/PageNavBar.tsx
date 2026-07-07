@@ -4,17 +4,12 @@ import { useAuthStore } from '../store/authStore'
 import { useToast } from './Toast'
 import { Plus, GripVertical, Pencil, Check, Copy, Trash2, Download, Upload, Shield, MoreVertical, X } from 'lucide-react'
 import api from '../api/client'
-
-const ROLE_OPTIONS = [
-  { value: 'ceo', label: 'مدیرعامل' },
-  { value: 'finance', label: 'مالی' },
-  { value: 'sales', label: 'فروش' },
-  { value: 'admin', label: 'مدیر سیستم' },
-]
+import { useTranslation } from '../utils/i18n'
 
 export default function PageNavBar() {
   const { pages, activePageId, setActivePage, addPage, updatePage, removePage, setPages, dashboardId } = useDashboardStore()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [showMenu, setShowMenu] = useState<string | null>(null)
@@ -23,7 +18,6 @@ export default function PageNavBar() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const menuContainerRef = useRef<HTMLDivElement>(null)
 
-  // Close menus on outside click
   useEffect(() => {
     if (!showMenu && !showAccessControl) return
     const handler = (e: MouseEvent) => {
@@ -41,7 +35,7 @@ export default function PageNavBar() {
     const order = pages.length
     try {
       const res = await api.post(`/dashboards/${dashboardId}/pages/`, {
-        name: `صفحه ${order + 1}`,
+        name: `${t('builderPage')} ${order + 1}`,
         order,
       })
       addPage({
@@ -51,9 +45,9 @@ export default function PageNavBar() {
         layout: res.data.layout || [],
         widgets: [],
       })
-      toast('صفحه جدید اضافه شد', 'success')
+      toast(t('pageNavNewPageAdded'), 'success')
     } catch {
-      toast('خطا در افزودن صفحه', 'error')
+      toast(t('pageNavAddPageError'), 'error')
     }
   }
 
@@ -65,28 +59,28 @@ export default function PageNavBar() {
       })
       updatePage(pageId, { name: renameValue.trim() })
       setRenamingId(null)
-      toast('نام صفحه تغییر کرد', 'success')
+      toast(t('pageNavPageRenamed'), 'success')
     } catch {
-      toast('خطا در تغییر نام', 'error')
+      toast(t('pageNavRenameError'), 'error')
     }
   }
 
   const handleDeletePage = async (pageId: string) => {
     if (!dashboardId) return
     if (pages.length <= 1) {
-      toast('امکان حذف آخرین صفحه وجود ندارد', 'error')
+      toast(t('pageNavCannotDeleteLast'), 'error')
       return
     }
-    if (!window.confirm('آیا از حذف این صفحه و تمام نمودارهای آن اطمینان دارید؟ این عمل غیرقابل بازگشت است.')) {
+    if (!window.confirm(t('pageNavDeleteConfirm'))) {
       return
     }
     try {
       await api.delete(`/dashboards/${dashboardId}/pages/${pageId}/`)
       removePage(pageId)
       setShowMenu(null)
-      toast('صفحه حذف شد', 'success')
+      toast(t('pageNavPageDeleted'), 'success')
     } catch {
-      toast('خطا در حذف صفحه', 'error')
+      toast(t('pageNavDeleteError'), 'error')
     }
   }
 
@@ -112,9 +106,9 @@ export default function PageNavBar() {
       }
       addPage(newPage)
       setShowMenu(null)
-      toast('صفحه کپی شد', 'success')
+      toast(t('pageNavPageDuplicated'), 'success')
     } catch {
-      toast('خطا در کپی صفحه', 'error')
+      toast(t('pageNavDuplicateError'), 'error')
     }
   }
 
@@ -130,9 +124,9 @@ export default function PageNavBar() {
       a.click()
       URL.revokeObjectURL(url)
       setShowMenu(null)
-      toast('خروجی JSON دانلود شد', 'success')
+      toast(t('pageNavJsonExported'), 'success')
     } catch {
-      toast('خطا در خروجی گرفتن', 'error')
+      toast(t('pageNavExportError'), 'error')
     }
   }
 
@@ -165,9 +159,9 @@ export default function PageNavBar() {
           })),
         }
         addPage(newPage)
-        toast('صفحه وارد شد', 'success')
+        toast(t('pageNavPageImported'), 'success')
       } catch {
-        toast('خطا در وارد کردن صفحه', 'error')
+        toast(t('pageNavImportError'), 'error')
       }
     }
     input.click()
@@ -191,9 +185,9 @@ export default function PageNavBar() {
         allowed_roles: newRoles,
       })
       updatePage(pageId, { allowedRoles: newRoles } as Partial<DashboardPageConfig>)
-      toast('دسترسی صفحه به‌روز شد', 'success')
+      toast(t('pageNavAccessUpdated'), 'success')
     } catch {
-      toast('خطا در به‌روزرسانی دسترسی', 'error')
+      toast(t('pageNavAccessError'), 'error')
     }
   }
 
@@ -203,7 +197,6 @@ export default function PageNavBar() {
     setShowMenu(null)
   }
 
-  // Drag-and-drop handlers
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDragIndex(index)
     e.dataTransfer.effectAllowed = 'move'
@@ -240,7 +233,7 @@ export default function PageNavBar() {
       api.put(`/dashboards/${dashboardId}/pages/reorder/`, {
         page_ids: reordered.map((p) => parseInt(p.id)),
       }).catch(() => {})
-      toast('ترتیب صفحات ذخیره شد', 'success')
+      toast(t('pageNavOrderSaved'), 'success')
     }
   }
 
@@ -249,7 +242,6 @@ export default function PageNavBar() {
     setDragOverIndex(null)
   }
 
-  // Filter pages by role access for display
   const userRole = useAuthStore((s) => s.user?.role)
   const visiblePages = pages.filter((page) => {
     const pr = page.allowedRoles
@@ -258,7 +250,6 @@ export default function PageNavBar() {
     return pr.includes(userRole)
   })
 
-  // If active page is not visible, auto-select the first visible page
   useEffect(() => {
     if (activePageId && visiblePages.length > 0 && !visiblePages.find((p) => p.id === activePageId)) {
       setActivePage(visiblePages[0].id)
@@ -267,7 +258,13 @@ export default function PageNavBar() {
 
   if (visiblePages.length === 0) return null
 
-  // Menu item button component
+  const ROLE_OPTIONS = [
+    { value: 'ceo', label: t('roleCeo') },
+    { value: 'finance', label: t('roleFinance') },
+    { value: 'sales', label: t('roleSales') },
+    { value: 'admin', label: t('roleAdmin') },
+  ]
+
   const MenuItem = ({ icon: Icon, label, onClick, danger }: { icon: React.ElementType; label: string; onClick: () => void; danger?: boolean }) => (
     <button
       onClick={onClick}
@@ -282,13 +279,11 @@ export default function PageNavBar() {
     </button>
   )
 
-  // Get the page being edited in the menu
   const menuPage = showMenu ? visiblePages.find((p) => p.id === showMenu) : null
   const accessPage = showAccessControl ? visiblePages.find((p) => p.id === showAccessControl) : null
 
   return (
-    <div ref={menuContainerRef} className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700" dir="rtl">
-      {/* Tab row */}
+    <div ref={menuContainerRef} className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
       <div className="flex items-center gap-1 px-6 overflow-x-auto py-1 scrollbar-thin">
         {visiblePages.map((page, index) => {
           const isActive = page.id === activePageId
@@ -354,7 +349,6 @@ export default function PageNavBar() {
                       setShowAccessControl(null)
                     }}
                     className="p-0.5 text-gray-400 hover:text-gray-600 rounded cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="منوی صفحه"
                   >
                     <MoreVertical className="w-3.5 h-3.5" />
                   </span>
@@ -364,24 +358,22 @@ export default function PageNavBar() {
           )
         })}
 
-        {/* Add page button */}
         <button
           onClick={handleAddPage}
           className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-          title="افزودن صفحه جدید"
+          title={t('pageNavAddPage')}
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleImportPage}
           className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-          title="وارد کردن صفحه"
+          title={t('pageNavImportPage')}
         >
           <Upload className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Inline menu panel — scrolls within the tab section */}
       {menuPage && showMenu && (
         <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-850 px-6 py-2">
           <div className="flex items-center gap-2 mb-2">
@@ -394,30 +386,29 @@ export default function PageNavBar() {
             </button>
           </div>
           <div className="flex flex-wrap gap-1">
-            <MenuItem icon={Pencil} label="تغییر نام" onClick={() => startRename(menuPage)} />
-            <MenuItem icon={Copy} label="کپی صفحه" onClick={() => handleDuplicatePage(menuPage.id)} />
-            <MenuItem icon={Download} label="خروجی JSON" onClick={() => handleExportPage(menuPage.id)} />
+            <MenuItem icon={Pencil} label={t('pageNavRename')} onClick={() => startRename(menuPage)} />
+            <MenuItem icon={Copy} label={t('pageNavDuplicatePage')} onClick={() => handleDuplicatePage(menuPage.id)} />
+            <MenuItem icon={Download} label={t('pageNavJsonExport')} onClick={() => handleExportPage(menuPage.id)} />
             <MenuItem
               icon={Shield}
-              label="کنترل دسترسی"
+              label={t('pageNavAccessControl')}
               onClick={() => {
                 setShowMenu(null)
                 setShowAccessControl(showAccessControl === menuPage.id ? null : menuPage.id)
               }}
             />
             {pages.length > 1 && (
-              <MenuItem icon={Trash2} label="حذف صفحه" onClick={() => handleDeletePage(menuPage.id)} danger />
+              <MenuItem icon={Trash2} label={t('pageNavDeletePage')} onClick={() => handleDeletePage(menuPage.id)} danger />
             )}
           </div>
         </div>
       )}
 
-      {/* Inline access control panel */}
       {accessPage && showAccessControl && (
         <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-850 px-6 py-2">
           <div className="flex items-center gap-2 mb-2">
             <Shield className="w-3 h-3 text-amber-500" />
-            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">نقش‌های مجاز — {accessPage.name}</span>
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{t('pageNavAllowedRoles')} — {accessPage.name}</span>
             <button
               onClick={() => setShowAccessControl(null)}
               className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition"
@@ -445,7 +436,7 @@ export default function PageNavBar() {
               )
             })}
           </div>
-          <p className="text-[10px] text-gray-400 mt-1.5">بدون انتخاب = همه نقش‌ها مجازند</p>
+          <p className="text-[10px] text-gray-400 mt-1.5">{t('noRoleRestriction')}</p>
         </div>
       )}
     </div>

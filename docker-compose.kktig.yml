@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: kktig_postgres
+    environment:
+      POSTGRES_DB: kktig
+      POSTGRES_USER: kktig_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kktig_pass}
+    volumes:
+      - kktig_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: kktig_redis
+    ports:
+      - "6380:6379"
+    restart: unless-stopped
+
+  superset:
+    image: apache/superset:3.1.0
+    container_name: kktig_superset
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-kktig-superset-secret-key}
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+    volumes:
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+      - kktig_superset_data:/app/superset_home
+    ports:
+      - "8089:8088"
+    depends_on:
+      - postgres
+    command: >
+      sh -c "superset db upgrade &&
+             superset init &&
+             gunicorn --bind 0.0.0.0:8088 --workers 4 --timeout 120 superset.app:create_app()"
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: kktig_backend
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=${DJANGO_SECRET_KEY:-kktig-django-secret-key}
+      - POSTGRES_DB=kktig
+      - POSTGRES_USER=kktig_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kktig_pass}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - SUPERSET_API_URL=http://superset:8088/api/v1
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY:-kktig-superset-secret-key}
+    volumes:
+      - ./backend:/app
+      - kktig_static_volume:/app/static
+      - kktig_media_volume:/app/media
+    ports:
+      - "8001:8000"
+    depends_on:
+      - postgres
+      - redis
+      - superset
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn nexivo.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+
+  celery:
+    build: ./backend
+    container_name: kktig_celery
+    environment:
+      - DATABASE_URL=postgresql://kktig_user:${POSTGRES_PASSWORD:-kktig_pass}@postgres:5432/kktig
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - redis
+    command: celery -A nexivo worker --loglevel=info
+
+  frontend:
+    build: ./frontend
+    container_name: kktig_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3001:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8001/api
+    depends_on:
+      - backend
+
+volumes:
+  kktig_postgres_data:
+  kktig_superset_data:
+  kktig_static_volume:
+  kktig_media_volume:

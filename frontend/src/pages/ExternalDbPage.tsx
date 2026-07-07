@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Server, Plus, Trash2, RefreshCw, PlugZap, Edit3 } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
+import { useTranslation } from '../utils/i18n'
 
 interface ExternalDb {
   id: number
@@ -26,6 +27,7 @@ export default function ExternalDbPage() {
   const [testingId, setTestingId] = useState<number | null>(null)
   const [testResult, setTestResult] = useState<{ id: number; ok: boolean; message: string } | null>(null)
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   useEffect(() => { loadDbs() }, [])
 
@@ -35,7 +37,7 @@ export default function ExternalDbPage() {
       const res = await api.get('/db-manager/databases/')
       setDbs(res.data.filter((d: { type: string }) => d.type === 'external'))
     } catch {
-      toast('خطا در بارگذاری اتصالات', 'error')
+      toast(t('externalDbLoadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -46,17 +48,17 @@ export default function ExternalDbPage() {
       const payload = { ...form, port: Number(form.port) }
       if (editingId) {
         await api.put(`/db-manager/databases/${editingId}/`, payload)
-        toast('اتصال به‌روزرسانی شد', 'success')
+        toast(t('externalDbUpdated'), 'success')
       } else {
         await api.post('/db-manager/databases/', payload)
-        toast('اتصال اضافه شد', 'success')
+        toast(t('externalDbCreated'), 'success')
       }
       setForm(EMPTY_FORM)
       setEditingId(null)
       setShowForm(false)
       loadDbs()
     } catch {
-      toast('خطا در ذخیره اتصال', 'error')
+      toast(t('externalDbSaveError'), 'error')
     }
   }
 
@@ -67,20 +69,20 @@ export default function ExternalDbPage() {
       const res = await api.post(`/db-manager/databases/${id}/test/`)
       setTestResult({ id, ok: res.data.ok, message: res.data.message })
     } catch {
-      setTestResult({ id, ok: false, message: 'خطا در تست اتصال' })
+      setTestResult({ id, ok: false, message: t('externalDbTestError') })
     } finally {
       setTestingId(null)
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('آیا از حذف این اتصال اطمینان دارید؟')) return
+    if (!window.confirm(t('externalDbDeleteConfirm'))) return
     try {
       await api.delete(`/db-manager/databases/${id}/`)
-      toast('اتصال حذف شد', 'success')
+      toast(t('externalDbDeleted'), 'success')
       loadDbs()
     } catch {
-      toast('خطا در حذف اتصال', 'error')
+      toast(t('externalDbDeleteError'), 'error')
     }
   }
 
@@ -91,7 +93,7 @@ export default function ExternalDbPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -99,14 +101,14 @@ export default function ExternalDbPage() {
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Server className="w-5 h-5 text-emerald-600" />
-            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">اتصالات پایگاه‌داده خارجی</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('externalDbTitle')}</h1>
           </div>
           <button
             onClick={() => { setShowForm(!showForm); setEditingId(null); setForm(EMPTY_FORM) }}
             className="flex items-center gap-2 px-3 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
           >
             <Plus className="w-4 h-4" />
-            افزودن اتصال
+            {t('externalDbAdd')}
           </button>
         </div>
       </header>
@@ -116,10 +118,10 @@ export default function ExternalDbPage() {
         {showForm && (
           <div className="bg-white dark:bg-gray-800 border border-emerald-200 dark:border-emerald-700 rounded-xl p-6 space-y-4">
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              {editingId ? 'ویرایش اتصال' : 'اتصال جدید'}
+              {editingId ? t('externalDbEdit') : t('externalDbNew')}
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <input placeholder="نام" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+              <input placeholder={t('externalDbNamePlaceholder')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500" />
               <input placeholder="هاست" value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })}
                 className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500" />
@@ -134,7 +136,7 @@ export default function ExternalDbPage() {
             </div>
             <div className="flex items-center gap-3">
               <button onClick={handleSave} className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium">
-                {editingId ? 'ذخیره' : 'افزودن'}
+                {editingId ? t('save') : t('payersAdd')}
               </button>
               <button onClick={() => { setShowForm(false); setEditingId(null) }} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition">
                 انصراف
@@ -151,7 +153,7 @@ export default function ExternalDbPage() {
         ) : dbs.length === 0 ? (
           <div className="text-center py-16">
             <Server className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">اتصال خارجی وجود ندارد</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('dbNoDatabases')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -163,7 +165,7 @@ export default function ExternalDbPage() {
                     <div>
                       <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{db.name}</span>
                       <span className={`mr-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${db.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
-                        {db.is_active ? 'فعال' : 'غیرفعال'}
+                        {db.is_active ? t('syncInactive') : t('syncInactive')}
                       </span>
                     </div>
                   </div>

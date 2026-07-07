@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
-import { Plus, BarChart3, Upload, LogOut, ChevronLeft, LayoutTemplate, TrendingUp, DollarSign, Megaphone, Users, ShoppingBag, Trash2, Copy, Share2, Shield, MoreVertical, X, UserCheck, FolderTree, Network, Pencil, Database } from 'lucide-react'
+import { useTranslation } from '../utils/i18n'
+import { Plus, BarChart3, Upload, LogOut, ChevronLeft, LayoutTemplate, TrendingUp, DollarSign, Megaphone, Users, ShoppingBag, Trash2, Copy, Share2, Shield, MoreVertical, X, UserCheck, FolderTree, Network, Pencil, Database, ArrowRightLeft } from 'lucide-react'
 import NotificationBell from '../components/NotificationBell'
 import ThemeToggle from '../components/ThemeToggle'
 import { ALL_ROLES } from '../utils/roles'
@@ -49,8 +50,6 @@ const TEMPLATE_COLORS: Record<string, string> = {
   blank: 'bg-gray-400',
 }
 
-
-
 export default function DashboardListPage() {
   const [dashboards, setDashboards] = useState<Dashboard[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,6 +65,8 @@ export default function DashboardListPage() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useTranslation()
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -74,7 +75,6 @@ export default function DashboardListPage() {
     fetchAssignedDashboards()
   }, [])
 
-  // Close menus on outside click
   useEffect(() => {
     if (!activeMenu) return
     const handler = (e: MouseEvent) => {
@@ -119,44 +119,44 @@ export default function DashboardListPage() {
   const createDashboard = async () => {
     try {
       const res = await api.post('/dashboards/', {
-        name: 'داشبورد جدید',
+        name: t('newDashboard'),
         description: '',
         allowed_roles: ['ceo', 'finance', 'sales', 'admin'],
       })
-      toast('داشبورد جدید ساخته شد', 'success')
+      toast(t('dashboardCreated'), 'success')
       navigate(`/dashboards/${res.data.id}`)
     } catch {
-      toast('خطا در ساخت داشبورد', 'error')
+      toast(t('createError'), 'error')
     }
   }
 
   const createFromTemplate = async (templateId: string) => {
-    const tmpl = templates.find((t) => t.id === templateId)
+    const tmpl = templates.find((tmpl) => tmpl.id === templateId)
     const name = tmpl?.name || templateId
-    if (!window.confirm(`آیا از ساخت داشبورد «${name}» از قالب اطمینان دارید؟`)) return
+    if (!window.confirm(`${t('createFromTemplateConfirm')} «${name}»`)) return
     setCreatingFromTemplate(templateId)
     try {
       const res = await api.post('/dashboards/create-from-template/', {
         template_id: templateId,
       })
-      toast('داشبورد از قالب ساخته شد', 'success')
+      toast(t('dashboardCreatedFromTemplate'), 'success')
       setShowTemplates(false)
       navigate(`/dashboards/${res.data.id}`)
     } catch {
-      toast('خطا در ساخت داشبورد از قالب', 'error')
+      toast(t('templateError'), 'error')
     } finally {
       setCreatingFromTemplate(null)
     }
   }
 
   const handleDeleteDashboard = async (d: Dashboard) => {
-    if (!window.confirm(`آیا از حذف داشبورد «${d.name}» اطمینان دارید؟ این عمل غیرقابل بازگشت است.`)) return
+    if (!window.confirm(t('deleteConfirm'))) return
     try {
       await api.delete(`/dashboards/${d.id}/`)
       setDashboards((prev) => prev.filter((x) => x.id !== d.id))
-      toast('داشبورد حذف شد', 'success')
+      toast(t('dashboardDeleted'), 'success')
     } catch {
-      toast('خطا در حذف داشبورد', 'error')
+      toast(t('deleteError'), 'error')
     }
     setActiveMenu(null)
   }
@@ -164,11 +164,11 @@ export default function DashboardListPage() {
   const handleDuplicateDashboard = async (d: Dashboard) => {
     try {
       await api.post(`/dashboards/${d.id}/duplicate/`)
-      toast('داشبورد کپی شد', 'success')
+      toast(t('dashboardDuplicated'), 'success')
       fetchDashboards()
       setActiveMenu(null)
     } catch {
-      toast('خطا در کپی داشبورد', 'error')
+      toast(t('duplicateError'), 'error')
     }
   }
 
@@ -190,9 +190,9 @@ export default function DashboardListPage() {
         )
       )
       setShareModal(null)
-      toast('دسترسی‌ها به‌روز شد', 'success')
+      toast(t('permissionsUpdated'), 'success')
     } catch {
-      toast('خطا در به‌روزرسانی دسترسی‌ها', 'error')
+      toast(t('shareError'), 'error')
     }
   }
 
@@ -221,28 +221,29 @@ export default function DashboardListPage() {
         )
       )
       setEditModal(null)
-      toast('داشبورد به‌روز شد', 'success')
+      toast(t('dashboardUpdated'), 'success')
     } catch {
-      toast('خطا در به‌روزرسانی داشبورد', 'error')
+      toast(t('editError'), 'error')
     }
   }
 
   const handleLogout = () => {
+    setShowLogoutConfirm(false)
     logout()
     navigate('/login')
   }
 
   const roleLabels: Record<string, string> = {
-    ceo: 'مدیرعامل',
-    finance: 'مالی',
-    sales: 'فروش',
-    admin: 'مدیر سیستم',
+    ceo: t('roleCeo'),
+    finance: t('roleFinance'),
+    sales: t('roleSales'),
+    admin: t('roleAdmin'),
   }
 
   const canManage = user?.role === 'admin' || user?.role === 'ceo'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -251,12 +252,19 @@ export default function DashboardListPage() {
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">نکسیوو</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">پلتفرم داشبورد هوشمند</p>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('nexivoBrand')}</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('smartDashboard')}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 rounded-xl transition"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+              {t('switchModule')}
+            </button>
             <NotificationBell />
             <ThemeToggle />
 
@@ -265,7 +273,7 @@ export default function DashboardListPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition"
             >
               <Upload className="w-4 h-4" />
-              بارگذاری داده
+              {t('dataUpload')}
             </Link>
 
             <Link
@@ -273,7 +281,7 @@ export default function DashboardListPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl transition"
             >
               <Database className="w-4 h-4" />
-              مدیریت پایگاه‌داده
+              {t('dbManager')}
             </Link>
 
             <Link
@@ -281,7 +289,7 @@ export default function DashboardListPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl transition"
             >
               <Network className="w-4 h-4" />
-              نمودار سازمانی
+              {t('orgChart')}
             </Link>
 
             {canManage && (
@@ -290,7 +298,7 @@ export default function DashboardListPage() {
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl transition"
               >
                 <FolderTree className="w-4 h-4" />
-                ساختار سازمانی
+                {t('orgStructure')}
               </Link>
             )}
 
@@ -300,7 +308,7 @@ export default function DashboardListPage() {
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl transition"
               >
                 <UserCheck className="w-4 h-4" />
-                تخصیص داشبورد
+                {t('assignments')}
               </Link>
             )}
 
@@ -310,7 +318,7 @@ export default function DashboardListPage() {
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl transition"
               >
                 <Shield className="w-4 h-4" />
-                مدیریت کاربران
+                {t('userManagement')}
               </Link>
             )}
 
@@ -322,11 +330,11 @@ export default function DashboardListPage() {
             </div>
 
             <button
-              onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-red-500 transition"
-              title="خروج"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 rounded-xl transition"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
+              {t('logout')}
             </button>
           </div>
         </div>
@@ -335,21 +343,21 @@ export default function DashboardListPage() {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">داشبوردها</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('dashboards')}</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowTemplates(!showTemplates)}
               className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium"
             >
               <LayoutTemplate className="w-4 h-4" />
-              استفاده از قالب
+              {t('useTemplate')}
             </button>
             <button
               onClick={createDashboard}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
-              داشبورد جدید
+              {t('newDashboard')}
             </button>
           </div>
         </div>
@@ -357,8 +365,8 @@ export default function DashboardListPage() {
         {/* Template Picker */}
         {showTemplates && (
           <div className="mb-8 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">قالب‌های آماده</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">یک قالب انتخاب کنید تا داشبورد شما با نمودارهای پیش‌فرض ساخته شود. سپس می‌توانید داده‌ها و تنظیمات را تغییر دهید.</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{t('templates')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('templateDesc')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {templates.map((tmpl) => {
                 const Icon = TEMPLATE_ICONS[tmpl.id] || BarChart3
@@ -377,12 +385,12 @@ export default function DashboardListPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 transition text-sm">
-                          {isCreating ? 'در حال ساخت...' : tmpl.name}
+                          {isCreating ? t('creating') : tmpl.name}
                         </h4>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tmpl.description}</p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                          <span>{tmpl.page_count} صفحه</span>
-                          <span>{tmpl.widget_count} نمودار</span>
+                          <span>{tmpl.page_count} {t('pages')}</span>
+                          <span>{tmpl.widget_count} {t('charts')}</span>
                         </div>
                       </div>
                     </div>
@@ -394,25 +402,25 @@ export default function DashboardListPage() {
         )}
 
         {loading ? (
-          <div className="text-center py-20 text-gray-500">در حال بارگذاری...</div>
+          <div className="text-center py-20 text-gray-500">{t('loading')}</div>
         ) : dashboards.length === 0 ? (
           <div className="text-center py-20">
             <BarChart3 className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">هنوز داشبوردی ندارید</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">اولین داشبورد خود را بسازید یا از یک قالب شروع کنید</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('noDashboards')}</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">{t('noDashboardsDesc')}</p>
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => setShowTemplates(true)}
                 className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
               >
                 <LayoutTemplate className="w-4 h-4 inline ml-2" />
-                استفاده از قالب
+                {t('useTemplate')}
               </button>
               <button
                 onClick={createDashboard}
                 className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium"
               >
-                ساخت داشبورد
+                {t('createDashboard')}
               </button>
             </div>
           </div>
@@ -431,25 +439,23 @@ export default function DashboardListPage() {
                     <ChevronLeft className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-indigo-500 transition" />
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
-                    {d.description || 'بدون توضیح'}
+                    {d.description || t('noDescription')}
                   </p>
                 </Link>
 
-                {/* Action buttons */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1 text-xs text-gray-400">
                     {assignedDashboards.has(d.id) && (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-medium">
                         <UserCheck className="w-2.5 h-2.5" />
-                        تخصیص
+                        {t('assigned')}
                       </span>
                     )}
-                    <span className="text-gray-400 dark:text-gray-500">{d.pages && d.pages.length > 0 ? `${d.pages.length} صفحه` : `${d.widgets?.length || 0} نمودار`}</span>
+                    <span className="text-gray-400 dark:text-gray-500">{d.pages && d.pages.length > 0 ? `${d.pages.length} ${t('pages')}` : `${d.widgets?.length || 0} ${t('charts')}`}</span>
                     <span className="mx-1 text-gray-300 dark:text-gray-600">·</span>
                     <span className="text-gray-400 dark:text-gray-500">{d.owner_name}</span>
                   </div>
 
-                  {/* Three-dot menu */}
                   <div className="relative" ref={activeMenu === d.id ? menuRef : undefined}>
                     <button
                       onClick={(e) => {
@@ -464,44 +470,32 @@ export default function DashboardListPage() {
                     {activeMenu === d.id && (
                       <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg py-1 z-50 min-w-[160px]">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openEditModal(d)
-                          }}
+                          onClick={(e) => { e.stopPropagation(); openEditModal(d) }}
                           className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           <Pencil className="w-3.5 h-3.5" />
-                          ویرایش نام و توضیحات
+                          {t('editNameDesc')}
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDuplicateDashboard(d)
-                          }}
+                          onClick={(e) => { e.stopPropagation(); handleDuplicateDashboard(d) }}
                           className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           <Copy className="w-3.5 h-3.5" />
-                          کپی داشبورد
+                          {t('duplicate')}
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openShareModal(d)
-                          }}
+                          onClick={(e) => { e.stopPropagation(); openShareModal(d) }}
                           className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           <Share2 className="w-3.5 h-3.5" />
-                          اشتراک‌گذاری
+                          {t('share')}
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteDashboard(d)
-                          }}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteDashboard(d) }}
                           className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                          حذف داشبورد
+                          {t('delete')}
                         </button>
                       </div>
                     )}
@@ -515,36 +509,33 @@ export default function DashboardListPage() {
 
       {/* Edit Dashboard Modal */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" dir="rtl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setEditModal(null)} />
           <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100">ویرایش داشبورد</h3>
+              <h3 className="font-bold text-gray-900 dark:text-gray-100">{t('editDashboard')}</h3>
               <button onClick={() => setEditModal(null)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نام داشبورد</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('dashboardName')}</label>
                 <input
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-                  dir="rtl"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">توضیحات</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('description')}</label>
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
-                  dir="rtl"
-                  placeholder="توضیحات داشبورد..."
                 />
               </div>
             </div>
@@ -553,14 +544,14 @@ export default function DashboardListPage() {
                 onClick={() => setEditModal(null)}
                 className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition"
               >
-                انصراف
+                {t('cancel')}
               </button>
               <button
                 onClick={handleEditSave}
                 disabled={!editForm.name.trim()}
                 className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 transition font-medium disabled:opacity-50"
               >
-                ذخیره
+                {t('save')}
               </button>
             </div>
           </div>
@@ -569,17 +560,17 @@ export default function DashboardListPage() {
 
       {/* Share Modal */}
       {shareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" dir="rtl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShareModal(null)} />
           <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100">اشتراک‌گذاری: {shareModal.name}</h3>
+              <h3 className="font-bold text-gray-900 dark:text-gray-100">{t('shareTitle')}: {shareModal.name}</h3>
               <button onClick={() => setShareModal(null)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">نقش‌هایی که به این داشبورد دسترسی دارند:</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('shareRolesDesc')}</p>
               <div className="space-y-2">
                 {ALL_ROLES.map((r) => (
                   <label
@@ -596,22 +587,58 @@ export default function DashboardListPage() {
                   </label>
                 ))}
               </div>
-              <p className="text-[10px] text-gray-400 mt-3">بدون انتخاب = همه نقش‌ها مجازند</p>
+              <p className="text-[10px] text-gray-400 mt-3">{t('noRoleRestriction')}</p>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3">
               <button
                 onClick={() => setShareModal(null)}
                 className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition"
               >
-                انصراف
+                {t('cancel')}
               </button>
               <button
                 onClick={handleShareSave}
                 className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 transition font-medium"
               >
-                ذخیره دسترسی‌ها
+                {t('savePermissions')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowLogoutConfirm(false)} />
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogOut className="w-8 h-8 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('logoutConfirmTitle')}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('logoutConfirmMsg')}</p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition"
+                >
+                  {t('confirmLogout')}
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              className="absolute top-3 left-3 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
       )}

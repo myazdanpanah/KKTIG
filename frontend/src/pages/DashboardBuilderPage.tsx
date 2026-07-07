@@ -12,6 +12,8 @@ import { useToast } from '../components/Toast'
 import { Plus, ArrowRight, Settings, Trash2, Share2, X, Undo2, Redo2, Filter, XCircle, Download, Maximize2, Minimize2, Play, FileText, Copy, RefreshCw, Clock, ChevronDown } from 'lucide-react'
 import { ALL_ROLES } from '../utils/roles'
 import { useAuthStore } from '../store/authStore'
+import { useTranslation } from '../utils/i18n'
+import { formatDateTime } from '../utils/formatDate'
 import { computeResponsiveLayout } from '../utils/layoutUtils'
 import { clampGridItem } from '../utils/widgetConstraints'
 
@@ -43,6 +45,7 @@ export default function DashboardBuilderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePageId])
   const { toast } = useToast()
+  const { t } = useTranslation()
   const currentUser = useAuthStore((s) => s.user)
   const canEdit = currentUser && ['admin', 'ceo', 'finance', 'sales'].includes(currentUser.role)
   const [showConfig, setShowConfig] = useState(false)
@@ -98,7 +101,7 @@ export default function DashboardBuilderPage() {
     const interval = setInterval(() => {
       loadDashboard(parseInt(id), activePageIdRef.current).then(() => {
         setLastRefreshed(new Date())
-        if (!silentRefreshRef.current) toast('داده‌ها به‌روزرسانی شد', 'success')
+        if (!silentRefreshRef.current) toast(t('builderRefreshed'), 'success')
       })
     }, refreshIntervalRef.current * 60 * 1000)
     return () => clearInterval(interval)
@@ -109,7 +112,7 @@ export default function DashboardBuilderPage() {
     if (!id) return
     await loadDashboard(parseInt(id), activePageIdRef.current)
     setLastRefreshed(new Date())
-    toast('داده‌ها به‌روزرسانی شد', 'success')
+    toast(t('builderRefreshed'), 'success')
   }
 
   // Change refresh interval
@@ -117,7 +120,7 @@ export default function DashboardBuilderPage() {
     setRefreshInterval(minutes)
     localStorage.setItem('nexivo_refresh_interval', String(minutes))
     setShowRefreshMenu(false)
-    toast(`بازه به‌روزرسانی: ${minutes} دقیقه`, 'info')
+    toast(`${t('builderRefreshInterval')}: ${minutes} ${t('builderMinutes')}`, 'info')
   }
 
   // Close refresh menu on outside click
@@ -145,14 +148,14 @@ export default function DashboardBuilderPage() {
   const handleUndo = useCallback(() => {
     if (canUndo) {
       undo()
-      toast('چیدمان بازگردانده شد', 'info')
+      toast(t('builderUndo'), 'info')
     }
   }, [canUndo, undo, toast])
 
   const handleRedo = useCallback(() => {
     if (canRedo) {
       redo()
-      toast('چیدمان بازاعمال شد', 'info')
+      toast(t('builderRedo'), 'info')
     }
   }, [canRedo, redo, toast])
 
@@ -336,7 +339,7 @@ export default function DashboardBuilderPage() {
     if (!id) return
     try {
       const payload: Record<string, unknown> = {
-        title: 'نمودار جدید',
+        title: t('builderNewChart'),
         chart_type: 'bar',
         chart_config: {},
         query_config: {},
@@ -372,7 +375,7 @@ export default function DashboardBuilderPage() {
       setShareRoles(res.data.allowed_roles || [])
       setShowShareModal(true)
     } catch {
-      toast('خطا در دریافت اطلاعات', 'error')
+      toast(t('builderFetchError'), 'error')
     }
   }
 
@@ -381,57 +384,57 @@ export default function DashboardBuilderPage() {
     try {
       await api.put(`/dashboards/${id}/share/`, { allowed_roles: shareRoles })
       setShowShareModal(false)
-      toast('دسترسی‌ها به‌روز شد', 'success')
+      toast(t('builderPermissionsUpdated'), 'success')
     } catch {
-      toast('خطا در به‌روزرسانی دسترسی‌ها', 'error')
+      toast(t('builderPermissionsError'), 'error')
     }
   }
 
   const deleteWidget = async (widgetId: string) => {
     if (!id) return
-    if (!window.confirm('آیا از حذف این نمودار اطمینان دارید؟')) return
+    if (!window.confirm(t('builderDeleteChartConfirm'))) return
     try {
       await api.delete(`/dashboards/${id}/widgets/${widgetId}/`)
       removeWidget(widgetId)
       setShowConfig(false)
       setEditingWidget(null)
-      toast('نمودار حذف شد', 'success')
+      toast(t('builderChartDeleted'), 'success')
     } catch {
-      toast('خطا در حذف نمودار', 'error')
+      toast(t('builderChartDeleteError'), 'error')
     }
   }
 
   // Copy chart to clipboard
   const handleCopyChart = async (w: { id: string; title: string }) => {
     if (!navigator.clipboard || !window.ClipboardItem) {
-      toast('کپی در مرورگر شما پشتیبانی نمی‌شود (HTTPS لازم است)', 'error')
+      toast(t('builderCopyNotSupported'), 'error')
       return
     }
     try {
       const container = document.getElementById(`chart-${w.id}`)
-      if (!container) { toast('امکان کپی وجود ندارد', 'error'); return }
+      if (!container) { toast(t('builderCopyNotAvailable'), 'error'); return }
       const echarts = await import('echarts')
       const instance = echarts.getInstanceByDom(container)
-      if (!instance) { toast('امکان کپی وجود ندارد', 'error'); return }
+      if (!instance) { toast(t('builderCopyNotAvailable'), 'error'); return }
       const dataUrl = instance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' })
       const res = await fetch(dataUrl)
       const blob = await res.blob()
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob })
       ])
-      toast('نمودار در کلیپبورد کپی شد', 'success')
+      toast(t('builderCopiedToClipboard'), 'success')
     } catch {
-      toast('خطا در کپی نمودار', 'error')
+      toast(t('builderCopyError'), 'error')
     }
   }
 
   // Dashboard-level PDF export (all pages)
   const handleExportPdf = async () => {
     // Collect all pages and their widgets
-    const allPages = pages.length > 0 ? pages : [{ id: activePageId || '0', name: activePage?.name || 'داشبورد', widgets: currentPageWidgets }]
+    const allPages = pages.length > 0 ? pages : [{ id: activePageId || '0', name: activePage?.name || t('dashboards'), widgets: currentPageWidgets }]
     const totalWidgets = allPages.reduce((sum, p) => sum + p.widgets.length, 0)
     if (totalWidgets === 0) {
-      toast('نموداری برای خروجی وجود ندارد', 'error')
+      toast(t('builderNoChartsForExport'), 'error')
       return
     }
     setPdfExporting(true)
@@ -493,7 +496,7 @@ export default function DashboardBuilderPage() {
         doc.setFontSize(8)
         doc.setTextColor(120)
         const now = new Date()
-        doc.text(`${now.toLocaleDateString('fa-IR')} ${now.toLocaleTimeString('fa-IR')} — صفحه ${pageIdx + 1}/${allPages.length}`, pageWidth / 2, margin + 12, { align: 'center' })
+        doc.text(`${formatDateTime(now)} — ${t('builderPage')} ${pageIdx + 1}/${allPages.length}`, pageWidth / 2, margin + 12, { align: 'center' })
         doc.setTextColor(0)
 
         // Collect chart images from this page's widgets
@@ -548,10 +551,10 @@ export default function DashboardBuilderPage() {
       }
 
       doc.save(`${activePage?.name || 'dashboard'}-all.pdf`)
-      toast('PDF همه صفحات دانلود شد', 'success')
+      toast(t('builderPdfDownloaded'), 'success')
     } catch (err) {
       console.error('PDF export error:', err)
-      toast('خطا در ساخت PDF', 'error')
+      toast(t('builderPdfError'), 'error')
     } finally {
       setPdfExporting(false)
       setPdfProgress({ current: 0, total: 0 })
@@ -605,7 +608,7 @@ export default function DashboardBuilderPage() {
                 <button
                   onClick={() => setExportDropdown(exportDropdown === w.id ? null : w.id)}
                   className="p-1 text-gray-400 hover:text-green-500 active:text-green-600 transition md:opacity-0 md:group-hover:opacity-100"
-                  title="خروجی"
+                  title={t('builderExport')}
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
@@ -615,43 +618,43 @@ export default function DashboardBuilderPage() {
                       onClick={() => {
                         setExportDropdown(null)
                         const container = document.getElementById(`chart-${w.id}`)
-                        if (!container) { toast('امکان خروجی وجود ندارد', 'error'); return }
+                        if (!container) { toast(t('builderExportNotAvailable'), 'error'); return }
                         import('echarts').then((echarts) => {
                           const instance = echarts.getInstanceByDom(container)
-                          if (!instance) { toast('امکان خروجی وجود ندارد', 'error'); return }
+                          if (!instance) { toast(t('builderExportNotAvailable'), 'error'); return }
                           const url = instance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' })
                           const link = document.createElement('a')
                           link.download = `${w.title || 'chart'}.png`
                           link.href = url
                           link.click()
-                          toast('تصویر PNG دانلود شد', 'success')
+                          toast(t('builderPngDownloaded'), 'success')
                         })
                       }}
                       className="w-full px-3 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center gap-2"
                     >
                       <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">PNG</span>
-                      <span>تصویر</span>
+                      <span>{t('builderImage')}</span>
                     </button>
                     <button
                       onClick={() => {
                         setExportDropdown(null)
                         const container = document.getElementById(`chart-${w.id}`)
-                        if (!container) { toast('امکان خروجی وجود ندارد', 'error'); return }
+                        if (!container) { toast(t('builderExportNotAvailable'), 'error'); return }
                         import('echarts').then((echarts) => {
                           const instance = echarts.getInstanceByDom(container)
-                          if (!instance) { toast('امکان خروجی وجود ندارد', 'error'); return }
+                          if (!instance) { toast(t('builderExportNotAvailable'), 'error'); return }
                           const url = instance.getDataURL({ type: 'svg', pixelRatio: 2 })
                           const link = document.createElement('a')
                           link.download = `${w.title || 'chart'}.svg`
                           link.href = url
                           link.click()
-                          toast('تصویر SVG دانلود شد', 'success')
+                          toast(t('builderSvgDownloaded'), 'success')
                         })
                       }}
                       className="w-full px-3 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center gap-2"
                     >
                       <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">SVG</span>
-                      <span>برداری</span>
+                      <span>{t('builderVector')}</span>
                     </button>
                   </div>
                 )}
@@ -660,7 +663,7 @@ export default function DashboardBuilderPage() {
               <button
                 onClick={() => handleCopyChart(w)}
                 className="p-1 text-gray-400 hover:text-blue-500 active:text-blue-600 transition md:opacity-0 md:group-hover:opacity-100"
-                title="کپی نمودار"
+                title={t('builderCopyChart')}
               >
                 <Copy className="w-3.5 h-3.5" />
               </button>
@@ -668,7 +671,7 @@ export default function DashboardBuilderPage() {
               <button
                 onClick={() => setFullScreenWidget(w.id)}
                 className="p-1 text-gray-400 hover:text-purple-500 active:text-purple-600 transition md:opacity-0 md:group-hover:opacity-100"
-                title="تمام صفحه"
+                title={t('builderFullScreen')}
               >
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
@@ -744,7 +747,7 @@ export default function DashboardBuilderPage() {
         </button>
         {/* Dashboard title */}
         <div className="text-center py-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{activePage?.name || 'داشبورد'}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{activePage?.name || t('dashboards')}</h1>
         </div>
         {/* Grid without editing controls */}
         <main className="px-6 pb-6">
@@ -816,7 +819,7 @@ export default function DashboardBuilderPage() {
             >
               <ArrowRight className="w-5 h-5" />
             </Link>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">ویرایشگر داشبورد</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('builderTitle')}</h1>
             {/* Device mode toggle — only for editors */}
             {canEdit && (
               <div className="flex items-center gap-1 mr-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
@@ -829,9 +832,9 @@ export default function DashboardBuilderPage() {
                         ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 shadow-sm'
                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                     }`}
-                    title={mode === 'mobile' ? 'ویرایش چیدمان موبایل' : 'ویرایش چیدمان دسکتاپ'}
+                    title={mode === 'mobile' ? t('builderMobileLayout') : t('builderDesktopLayout')}
                   >
-                    {mode === 'mobile' ? '📱 موبایل' : '🖥️ دسکتاپ'}
+                    {mode === 'mobile' ? t('builderMobile') : t('builderDesktop')}
                   </button>
                 ))}
               </div>
@@ -844,7 +847,7 @@ export default function DashboardBuilderPage() {
                 onClick={handleUndo}
                 disabled={!canUndo}
                 className="p-1.5 rounded-md transition text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                title="بازگشت (Ctrl+Z)"
+                title={t('builderUndoHint')}
               >
                 <Undo2 className="w-3.5 h-3.5" />
               </button>
@@ -852,7 +855,7 @@ export default function DashboardBuilderPage() {
                 onClick={handleRedo}
                 disabled={!canRedo}
                 className="p-1.5 rounded-md transition text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                title="بازگشت (Ctrl+Shift+Z)"
+                title={t('builderRedoHint')}
               >
                 <Redo2 className="w-3.5 h-3.5" />
               </button>
@@ -863,23 +866,23 @@ export default function DashboardBuilderPage() {
                 <button
                   onClick={handleManualRefresh}
                   className="p-1.5 rounded-md transition text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                  title="به‌روزرسانی دستی"
+                  title={t('builderManualRefresh')}
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setShowRefreshMenu(!showRefreshMenu)}
                   className="flex items-center gap-0.5 px-1.5 py-1 rounded-md transition text-[10px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  title="تنظیم بازه به‌روزرسانی"
+                  title={t('builderRefreshSettings')}
                 >
                   <Clock className="w-3 h-3" />
-                  <span>{refreshInterval} دقیقه</span>
+                  <span>{refreshInterval} {t('builderMinutes')}</span>
                   <ChevronDown className="w-3 h-3" />
                 </button>
               </div>
               {showRefreshMenu && (
                 <div className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 py-1 min-w-[160px]">
-                  <div className="px-3 py-1.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">بازه به‌روزرسانی</div>
+                  <div className="px-3 py-1.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">{t('builderRefreshInterval')}</div>
                   {([1, 5, 15, 30] as const).map((min) => (
                     <button
                       key={min}
@@ -890,12 +893,12 @@ export default function DashboardBuilderPage() {
                           : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
-                      {min} دقیقه
+                      {min} {t('builderMinutes')}
                     </button>
                   ))}
                   <div className="border-t border-gray-100 dark:border-gray-700 mt-1 pt-1">
                     <div className="flex items-center justify-between px-3 py-1.5">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">بی‌صدا</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{t('builderSilent')}</span>
                       <button
                         onClick={() => {
                           const next = !silentRefresh
@@ -910,7 +913,7 @@ export default function DashboardBuilderPage() {
                   </div>
                   {lastRefreshed && (
                     <div className="px-3 py-1.5 text-[10px] text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 mt-1">
-                      آخرین به‌روزرسانی: {lastRefreshed.toLocaleTimeString('fa-IR')}
+                      {t('builderLastRefreshed')}: {formatDateTime(lastRefreshed)}
                     </div>
                   )}
                 </div>
@@ -925,16 +928,16 @@ export default function DashboardBuilderPage() {
                   ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600'
                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
-              title={presentMode ? 'خروج از حالت ارائه' : 'حالت ارائه'}
+              title={presentMode ? t('builderExitPresentationMode') : t('builderPresentationMode')}
             >
               <Play className="w-4 h-4" />
-              {presentMode ? 'خروج' : 'ارائه'}
+              {presentMode ? t('builderExitPresentation') : t('builderPresentationMode')}
             </button>
             {/* PDF Export */}
             <button
               onClick={handleExportPdf}
               className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
-              title="خروجی PDF"
+              title={t('builderExport')}
             >
               <FileText className="w-4 h-4" />
               PDF
@@ -942,10 +945,9 @@ export default function DashboardBuilderPage() {
             <button
               onClick={openShareModal}
               className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
-              title="اشتراک‌گذاری و دسترسی"
+              title={t('builderShareAccess')}
             >
-              <Share2 className="w-4 h-4" />
-              اشتراک‌گذاری
+              <Share2 className="w-4 h-4" />               {t('shareTitle')}
             </button>
             {canEdit && (
               <button
@@ -953,7 +955,7 @@ export default function DashboardBuilderPage() {
                 className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm"
               >
                 <Plus className="w-4 h-4" />
-                افزودن نمودار
+                {t('builderAddChart')}
               </button>
             )}
           </div>
@@ -972,16 +974,15 @@ export default function DashboardBuilderPage() {
           <div className="text-center py-20">
             <Settings className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              {activePage ? `${activePage.name} خالی است` : 'داشبورد خالی است'}
+              {activePage ? `${activePage.name} ${t('builderPageEmpty')}` : t('builderDashboardEmpty')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              اولین نمودار خود را اضافه کنید
+              {t('builderAddFirstChart')}
             </p>
             <button
               onClick={addNewWidget}
               className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium"
-            >
-              افزودن نمودار
+            >                {t('builderAddChart')}
             </button>
           </div>
         ) : (
@@ -1076,13 +1077,13 @@ export default function DashboardBuilderPage() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowShareModal(false)} />
           <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100">اشتراک‌گذاری و دسترسی</h3>
+              <h3 className="font-bold text-gray-900 dark:text-gray-100">{t('builderShareAccess')}</h3>
               <button onClick={() => setShowShareModal(false)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">نقش‌هایی که به این داشبورد دسترسی دارند:</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('shareRolesDesc')}</p>
               <div className="space-y-2">
                 {ALL_ROLES.map((r) => (
                   <label
@@ -1099,20 +1100,18 @@ export default function DashboardBuilderPage() {
                   </label>
                 ))}
               </div>
-              <p className="text-[10px] text-gray-400 mt-3">بدون انتخاب = همه نقش‌ها مجازند</p>
+              <p className="text-[10px] text-gray-400 mt-3">{t('noRoleRestriction')}</p>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3">
               <button
                 onClick={() => setShowShareModal(false)}
                 className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition"
-              >
-                انصراف
+              >                 {t('cancel')}
               </button>
               <button
                 onClick={handleShareSave}
                 className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 transition font-medium"
-              >
-                ذخیره دسترسی‌ها
+              >                 {t('savePermissions')}
               </button>
             </div>
           </div>
@@ -1126,9 +1125,9 @@ export default function DashboardBuilderPage() {
             <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="w-8 h-8 text-indigo-600 dark:text-indigo-400 animate-pulse" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">در حال ساخت PDF</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{t('builderBuildingPdf')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              صفحه {pdfProgress.current} از {pdfProgress.total} نمودار...
+              {t('builderPage')} {pdfProgress.current} {t('finLoadError')} {pdfProgress.total} {t('builderPdfProgress')}...
             </p>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
               <div
@@ -1136,7 +1135,7 @@ export default function DashboardBuilderPage() {
                 style={{ width: `${pdfProgress.total > 0 ? (pdfProgress.current / pdfProgress.total) * 100 : 0}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500">لطفاً صبر کنید...</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{t('builderPleaseWait')}</p>
           </div>
         </div>
       )}

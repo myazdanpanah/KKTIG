@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
+import { useTranslation } from '../utils/i18n'
 import { ArrowRight, Building2, FolderTree, Users, ChevronDown, ChevronRight, Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 
 interface OrgUser {
@@ -61,6 +62,7 @@ export default function OrganizationPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   const [tree, setTree] = useState<Company[]>([])
   const [users, setUsers] = useState<UserOption[]>([])
@@ -89,7 +91,7 @@ export default function OrganizationPage() {
       setTree(treeRes.data)
       setUsers(usersRes.data)
     } catch {
-      toast('خطا در دریافت اطلاعات', 'error')
+      toast(t('builderFetchError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -118,7 +120,7 @@ export default function OrganizationPage() {
 
   const handleSubmit = async () => {
     if (!form.name.trim()) {
-      toast('نام الزامی است', 'error')
+      toast(t('orgPageNameRequired'), 'error')
       return
     }
     try {
@@ -137,11 +139,11 @@ export default function OrganizationPage() {
         if (editingId) await api.put(`/auth/teams/${editingId}/`, payload)
         else await api.post('/auth/teams/', payload)
       }
-      toast(editingId ? 'به‌روزرسانی شد' : 'ایجاد شد', 'success')
+      toast(editingId ? t('orgPageUpdated') : t('orgPageCreated'), 'success')
       setModalType(null)
       fetchData()
     } catch {
-      toast('خطا در ذخیره', 'error')
+      toast(t('orgPageSaveError'), 'error')
     }
   }
 
@@ -151,17 +153,17 @@ export default function OrganizationPage() {
       if (type === 'company') await api.delete(`/auth/companies/${id}/`)
       else if (type === 'division') await api.delete(`/auth/divisions/${id}/`)
       else await api.delete(`/auth/teams/${id}/`)
-      toast('حذف شد', 'success')
+      toast(t('orgPageDeleted'), 'success')
       fetchData()
     } catch {
-      toast('خطا در حذف', 'error')
+      toast(t('orgPageDeleteError'), 'error')
     }
   }
 
   if (user?.role !== 'admin' && user?.role !== 'ceo') return null
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">

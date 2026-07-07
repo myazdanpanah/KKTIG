@@ -4,6 +4,7 @@ import { ArrowRight, Plus, Trash2, RefreshCw, Pencil, Check, X } from 'lucide-re
 import api from '../api/client'
 import { useToast } from '../components/Toast'
 import { useAuthStore } from '../store/authStore'
+import { useTranslation } from '../utils/i18n'
 
 interface SchemaColumn {
   name: string
@@ -30,6 +31,7 @@ export default function SchemaEditorPage() {
   const [changingType, setChangingType] = useState<string | null>(null)
   const [typeValue, setTypeValue] = useState('TEXT')
   const { toast } = useToast()
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role === 'admin' || user?.role === 'ceo'
 
@@ -42,7 +44,7 @@ export default function SchemaEditorPage() {
       const res = await api.get(`/db-manager/tables/${source}/${table}/schema/`)
       setSchema(res.data)
     } catch {
-      toast('خطا در بارگذاری اسکیما', 'error')
+      toast(t('schemaEditorLoadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -59,10 +61,10 @@ export default function SchemaEditorPage() {
       })
       setShowAdd(false)
       setNewCol({ name: '', type: 'TEXT', nullable: true, default: '' })
-      toast('ستون اضافه شد', 'success')
+      toast(t('schemaEditorColumnAdded'), 'success')
       loadSchema()
     } catch {
-      toast('خطا در افزودن ستون', 'error')
+      toast(t('schemaEditorColumnAddError'), 'error')
     }
   }
 
@@ -73,10 +75,10 @@ export default function SchemaEditorPage() {
         new_name: renameValue.trim(),
       })
       setRenaming(null)
-      toast('نام ستون تغییر کرد', 'success')
+      toast(t('schemaEditorColumnRenamed'), 'success')
       loadSchema()
     } catch {
-      toast('خطا در تغییر نام', 'error')
+      toast(t('schemaEditorColumnRenameError'), 'error')
     }
   }
 
@@ -87,27 +89,27 @@ export default function SchemaEditorPage() {
         new_type: typeValue,
       })
       setChangingType(null)
-      toast('نوع ستون تغییر کرد', 'success')
+      toast(t('schemaEditorColumnTypeChanged'), 'success')
       loadSchema()
     } catch {
-      toast('خطا در تغییر نوع', 'error')
+      toast(t('schemaEditorColumnTypeError'), 'error')
     }
   }
 
   const handleDrop = async (colName: string) => {
     if (!source || !table) return
-    if (!window.confirm(`آیا از حذف ستون «${colName}» اطمینان دارید؟`)) return
+    if (!window.confirm(t('schemaEditorColumnDeleteConfirm'))) return
     try {
       await api.delete(`/db-manager/tables/${source}/${table}/columns/${colName}/drop/`)
-      toast('ستون حذف شد', 'success')
+      toast(t('schemaEditorColumnDeleted'), 'success')
       loadSchema()
     } catch {
-      toast('خطا در حذف ستون', 'error')
+      toast(t('schemaEditorColumnDeleteError'), 'error')
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -116,7 +118,7 @@ export default function SchemaEditorPage() {
             </Link>
             <div>
               <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">مدیریت اسکیما</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{table} · {schema.length} ستون</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{table} · {schema.length} {t('tableEditorColumns')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -153,7 +155,7 @@ export default function SchemaEditorPage() {
                 onChange={(e) => setNewCol({ ...newCol, type: e.target.value })}
                 className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                {PG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                {PG_TYPES.map((ty) => <option key={ty} value={ty}>{ty}</option>)}
               </select>
               <input
                 placeholder="مقدار پیش‌فرض (اختیاری)"
@@ -218,7 +220,7 @@ export default function SchemaEditorPage() {
                             onChange={(e) => setTypeValue(e.target.value)}
                             className="px-2 py-1 text-sm border border-indigo-300 dark:border-indigo-600 dark:bg-gray-900 dark:text-gray-100 rounded outline-none"
                           >
-                            {PG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                            {PG_TYPES.map((ty) => <option key={ty} value={ty}>{ty}</option>)}
                           </select>
                           <button onClick={() => handleChangeType(col.name)} className="text-green-600 hover:text-green-700"><Check className="w-4 h-4" /></button>
                           <button onClick={() => setChangingType(null)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>

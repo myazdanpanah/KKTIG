@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
 import { ArrowRight, Building2, FolderTree, Users, ChevronDown, ChevronRight, User, Crown } from 'lucide-react'
+import { useTranslation } from '../utils/i18n'
 
 interface OrgMember {
   id: number
@@ -42,16 +43,11 @@ const ROLE_COLORS: Record<string, string> = {
   sales: 'bg-emerald-100 text-emerald-700 border-emerald-200',
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  ceo: 'مدیرعامل',
-  admin: 'مدیر سیستم',
-  finance: 'مالی',
-  sales: 'فروش',
-}
-
 function MemberCard({ member, compact = false }: { member: OrgMember; compact?: boolean }) {
+  const { t } = useTranslation()
   const initials = (member.first_name?.[0] || member.username[0] || '').toUpperCase()
   const fullName = [member.first_name, member.last_name].filter(Boolean).join(' ') || member.username
+  const roleLabels: Record<string, string> = { ceo: t('orgChartRoleCeo'), admin: t('orgChartRoleAdmin'), finance: t('orgChartRoleFinance'), sales: t('orgChartRoleSales') }
 
   if (compact) {
     return (
@@ -61,7 +57,7 @@ function MemberCard({ member, compact = false }: { member: OrgMember; compact?: 
         </div>
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{fullName}</p>
-          <p className="text-[10px] text-gray-400">{ROLE_LABELS[member.role] || member.role}</p>
+          <p className="text-[10px] text-gray-400">{roleLabels[member.role] || member.role}</p>
         </div>
       </div>
     )
@@ -77,7 +73,7 @@ function MemberCard({ member, compact = false }: { member: OrgMember; compact?: 
           <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{fullName}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">@{member.username}</p>
           <span className={`inline-block mt-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-            {ROLE_LABELS[member.role] || member.role}
+            {roleLabels[member.role] || member.role}
           </span>
         </div>
       </div>
@@ -90,6 +86,7 @@ function MemberCard({ member, compact = false }: { member: OrgMember; compact?: 
 
 function TeamNode({ team }: { team: OrgTeam }) {
   const [expanded, setExpanded] = useState(false)
+  const { t } = useTranslation()
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
@@ -110,14 +107,14 @@ function TeamNode({ team }: { team: OrgTeam }) {
           {team.manager && (
             <div>
               <p className="text-[10px] font-medium text-amber-600 mb-1 flex items-center gap-1">
-                <Crown className="w-3 h-3" /> سرپرست تیم
+                <Crown className="w-3 h-3" /> {t('orgChartTeamLead')}
               </p>
               <MemberCard member={team.manager} compact />
             </div>
           )}
           {team.members.length > 0 && (
             <div>
-              <p className="text-[10px] font-medium text-gray-400 mb-1">اعضا ({team.members.length})</p>
+              <p className="text-[10px] font-medium text-gray-400 mb-1">{t('orgChartMembers')} ({team.members.length})</p>
               <div className="space-y-1">
                 {team.members.filter(m => m.id !== team.manager?.id).map(m => (
                   <MemberCard key={m.id} member={m} compact />
@@ -126,7 +123,7 @@ function TeamNode({ team }: { team: OrgTeam }) {
             </div>
           )}
           {team.members.length === 0 && !team.manager && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-2">بدون عضو</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-2">{t('orgChartNoMembers')}</p>
           )}
         </div>
       )}
@@ -136,8 +133,9 @@ function TeamNode({ team }: { team: OrgTeam }) {
 
 function DivisionNode({ division }: { division: OrgDivision }) {
   const [expanded, setExpanded] = useState(true)
+  const { t } = useTranslation()
   const totalMembers = (division.direct_employees?.length || 0) +
-    division.teams.reduce((sum, t) => sum + t.members.length, 0)
+    division.teams.reduce((sum, tm) => sum + tm.members.length, 0)
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
@@ -152,9 +150,9 @@ function DivisionNode({ division }: { division: OrgDivision }) {
           <div>
             <span className="text-base font-bold text-gray-900 dark:text-gray-100">{division.name}</span>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] text-gray-400">{totalMembers} نفر</span>
+              <span className="text-[10px] text-gray-400">{totalMembers} {t('orgChartPeople')}</span>
               <span className="text-[10px] text-gray-400">·</span>
-              <span className="text-[10px] text-gray-400">{division.teams.length} تیم</span>
+              <span className="text-[10px] text-gray-400">{division.teams.length} {t('orgChartTeams')}</span>
             </div>
           </div>
         </div>
@@ -166,7 +164,7 @@ function DivisionNode({ division }: { division: OrgDivision }) {
           {division.manager && (
             <div className="mb-3">
               <p className="text-[10px] font-medium text-amber-600 mb-1 flex items-center gap-1">
-                <Crown className="w-3 h-3" /> مدیر واحد
+                <Crown className="w-3 h-3" /> {t('orgChartManager')}
               </p>
               <MemberCard member={division.manager} />
             </div>
@@ -174,7 +172,7 @@ function DivisionNode({ division }: { division: OrgDivision }) {
 
           {division.direct_employees && division.direct_employees.length > 0 && (
             <div className="mb-3">
-              <p className="text-[10px] font-medium text-gray-400 mb-1">کارکنان مستقیم</p>
+              <p className="text-[10px] font-medium text-gray-400 mb-1">{t('orgChartDirectEmployees')}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {division.direct_employees.filter(m => m.id !== division.manager?.id).map(m => (
                   <MemberCard key={m.id} member={m} compact />
@@ -184,10 +182,11 @@ function DivisionNode({ division }: { division: OrgDivision }) {
           )}
 
           {division.teams.length > 0 && (
-            <div>                  <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-2">تیم‌ها ({division.teams.length})</p>
-                  <div className="space-y-2 pl-4 border-r-2 border-indigo-100 dark:border-indigo-800">
-                {division.teams.map(team => (
-                  <TeamNode key={team.id} team={team} />
+            <div>
+              <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-2">{t('orgChartTeams')} ({division.teams.length})</p>
+              <div className="space-y-2 pl-4 border-r-2 border-indigo-100 dark:border-indigo-800">
+                {division.teams.map(tm => (
+                  <TeamNode key={tm.id} team={tm} />
                 ))}
               </div>
             </div>
@@ -202,6 +201,7 @@ export default function OrgChartPage() {
   const [orgTree, setOrgTree] = useState<OrgCompany[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   useEffect(() => {
     fetchOrgTree()
@@ -212,7 +212,7 @@ export default function OrgChartPage() {
       const res = await api.get('/auth/org-tree/')
       setOrgTree(res.data.companies || [])
     } catch {
-      toast('خطا در دریافت ساختار سازمانی', 'error')
+      toast(t('orgChartLoadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -224,7 +224,7 @@ export default function OrgChartPage() {
       acc.divisions += company.divisions.length
       acc.teams += company.divisions.reduce((s, d) => s + d.teams.length, 0)
       acc.members += company.divisions.reduce(
-        (s, d) => s + (d.direct_employees?.length || 0) + d.teams.reduce((ts, t) => ts + t.members.length, 0),
+        (s, d) => s + (d.direct_employees?.length || 0) + d.teams.reduce((ts, tm) => ts + tm.members.length, 0),
         0
       )
       acc.members += company.unassigned?.length || 0
@@ -234,7 +234,7 @@ export default function OrgChartPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -246,8 +246,8 @@ export default function OrgChartPage() {
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">نمودار سازمانی</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">ساختار سازمانی شرکت و تیم‌ها</p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('orgChartTitle')}</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('orgChartSubtitle')}</p>
               </div>
             </div>
           </div>
@@ -255,21 +255,21 @@ export default function OrgChartPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-8">
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'شرکت', count: totalStats.companies, icon: Building2, color: 'bg-indigo-100 text-indigo-600' },
-            { label: 'واحد', count: totalStats.divisions, icon: FolderTree, color: 'bg-purple-100 text-purple-600' },
-            { label: 'تیم', count: totalStats.teams, icon: Users, color: 'bg-blue-100 text-blue-600' },
-            { label: 'کارمند', count: totalStats.members, icon: User, color: 'bg-emerald-100 text-emerald-600' },
+            { label: t('orgStatCompany'), count: totalStats.companies, icon: Building2, color: 'bg-indigo-100 text-indigo-600' },
+            { label: t('orgStatDivision'), count: totalStats.divisions, icon: FolderTree, color: 'bg-purple-100 text-purple-600' },
+            { label: t('orgStatTeam'), count: totalStats.teams, icon: Users, color: 'bg-blue-100 text-blue-600' },
+            { label: t('orgStatMember'), count: totalStats.members, icon: User, color: 'bg-emerald-100 text-emerald-600' },
           ].map((stat) => (
             <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}>
                   <stat.icon className="w-5 h-5" />
                 </div>
-                <div>                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stat.count}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stat.count}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
                 </div>
               </div>
             </div>
@@ -277,17 +277,17 @@ export default function OrgChartPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-gray-500">در حال بارگذاری...</div>
+          <div className="text-center py-20 text-gray-500">{t('loading')}</div>
         ) : orgTree.length === 0 ? (
           <div className="text-center py-20">
             <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">هنوز ساختار سازمانی تعریف نشده</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">از بخش مدیریت سازمانی شرکت، واحد و تیم اضافه کنید</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('orgChartEmpty')}</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">{t('orgChartEmptyDesc')}</p>
             <Link
               to="/admin/org"
               className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium inline-block"
             >
-              رفتن به مدیریت سازمانی
+              {t('orgChartGoToAdmin')}
             </Link>
           </div>
         ) : (
@@ -300,8 +300,8 @@ export default function OrgChartPage() {
                     <div>
                       <h2 className="text-lg font-bold text-white">{company.name}</h2>
                       <p className="text-xs text-indigo-200">
-                        {company.divisions.length} واحد ·{' '}
-                        {company.divisions.reduce((s, d) => s + d.teams.length, 0)} تیم
+                        {company.divisions.length} {t('orgStatDivision')} ·{' '}
+                        {company.divisions.reduce((s, d) => s + d.teams.length, 0)} {t('orgChartTeams')}
                       </p>
                     </div>
                   </div>
@@ -314,7 +314,7 @@ export default function OrgChartPage() {
 
                   {company.unassigned && company.unassigned.length > 0 && (
                     <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-4">
-                      <p className="text-xs font-medium text-gray-400 mb-2">بدون واحد سازمانی ({company.unassigned.length})</p>
+                      <p className="text-xs font-medium text-gray-400 mb-2">{t('orgChartUnassigned')} ({company.unassigned.length})</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {company.unassigned.map((m) => (
                           <MemberCard key={m.id} member={m} compact />

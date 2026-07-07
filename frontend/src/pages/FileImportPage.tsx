@@ -3,12 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Upload, FileSpreadsheet, RefreshCw } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
-
-const MODES = [
-  { value: 'replace', label: 'جایگزینی', desc: 'جدول فعلی را خالی کرده و داده جایگزین می‌شود' },
-  { value: 'append', label: 'افزودن', desc: 'داده‌های جدید به انتهای جدول اضافه می‌شوند' },
-  { value: 'upsert', label: 'بازنویسی', desc: 'ردیف‌های تکراری با داده جدید جایگزین می‌شوند' },
-]
+import { useTranslation } from '../utils/i18n'
 
 export default function FileImportPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -20,7 +15,14 @@ export default function FileImportPage() {
   const [result, setResult] = useState<{ rows_affected: number; warnings: string[] } | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const { toast } = useToast()
+  const { t } = useTranslation()
   const navigate = useNavigate()
+
+  const MODES = [
+    { value: 'replace', label: t('fileImportModeReplace'), desc: t('fileImportModeReplaceDesc') },
+    { value: 'append', label: t('fileImportModeAppend'), desc: t('fileImportModeAppendDesc') },
+    { value: 'upsert', label: t('fileImportModeUpsert'), desc: t('fileImportModeUpsertDesc') },
+  ]
 
   const handleFile = (f: File) => {
     setFile(f)
@@ -39,7 +41,7 @@ export default function FileImportPage() {
 
   const handleImport = async () => {
     if (!file || !tableName.trim()) {
-      toast('فایل و نام جدول الزامی است', 'error')
+      toast(t('fileImportFileRequired'), 'error')
       return
     }
     setImporting(true)
@@ -51,18 +53,14 @@ export default function FileImportPage() {
       if (mode === 'upsert' && keyColumn) {
         formData.append('key_column', keyColumn)
       }
-      // If table starts with "nexivo_" or is clearly new, use /import/new/
-      // Otherwise try the existing-table endpoint first
       let res
       try {
-        // Try existing table first
         formData.append('table_name', tableName.trim())
         res = await api.post(`/db-manager/tables/${source}/${tableName.trim()}/import/`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
       } catch (err) {
         if (err && typeof err === 'object' && 'response' in err && (err as { response?: { status?: number } }).response?.status === 404) {
-          // Table doesn't exist — create new
           const newFormData = new FormData()
           newFormData.append('file', file)
           newFormData.append('table_name', tableName.trim())
@@ -75,9 +73,9 @@ export default function FileImportPage() {
         }
       }
       setResult(res.data)
-      toast('فایل با موفقیت وارد شد', 'success')
+      toast(t('fileImportSuccess'), 'success')
     } catch {
-      toast('خطا در وارد کردن فایل', 'error')
+      toast(t('fileImportError'), 'error')
     } finally {
       setImporting(false)
     }
@@ -86,14 +84,14 @@ export default function FileImportPage() {
   const acceptedTypes = '.xlsx,.xls,.csv'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <Link to="/db-manager" className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition">
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Upload className="w-5 h-5 text-indigo-600" />
-          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">وارد کردن فایل</h1>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('fileImportTitle')}</h1>
         </div>
       </header>
 
@@ -125,7 +123,7 @@ export default function FileImportPage() {
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{file.name}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {(file.size / 1024).toFixed(1)} KB · کلیک کنید برای تغییر
+                    {(file.size / 1024).toFixed(1)} KB · {t('fileImportClickToChange')}
                   </p>
                 </div>
               </div>
@@ -133,9 +131,9 @@ export default function FileImportPage() {
               <div>
                 <Upload className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  فایل XLSX، XLS یا CSV را اینجا رها کنید
+                  {t('fileImportDropzone')}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">یا کلیک کنید برای انتخاب فایل</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('fileImportClickToSelect')}</p>
               </div>
             )}
           </label>
@@ -144,18 +142,18 @@ export default function FileImportPage() {
         {/* Settings */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">نام جدول</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('dbImportFile')}</label>
             <input
               value={tableName}
               onChange={(e) => setTableName(e.target.value)}
-              placeholder="nexivo_my_data یا نام جدول موجود"
+              placeholder={t('fileImportTableNamePlaceholder')}
               className="w-full px-4 py-2.5 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
             />
-            <p className="text-[10px] text-gray-400 mt-1">اگر جدول وجود نداشته باشد، ساخته می‌شود</p>
+            <p className="text-[10px] text-gray-400 mt-1">{t('dbImportOrConnect')}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">منبع</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('dbAddConnection')}</label>
             <select
               value={source}
               onChange={(e) => setSource(e.target.value)}
@@ -166,7 +164,7 @@ export default function FileImportPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">حالت وارد کردن</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('fileImportTitle')}</label>
             <div className="grid grid-cols-3 gap-3">
               {MODES.map((m) => (
                 <button
@@ -187,7 +185,7 @@ export default function FileImportPage() {
 
           {mode === 'upsert' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">ستون کلید (برای بازنویسی)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('dcInvoiceNumber')}</label>
               <input
                 value={keyColumn}
                 onChange={(e) => setKeyColumn(e.target.value)}
@@ -203,16 +201,16 @@ export default function FileImportPage() {
             className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            {importing ? 'در حال وارد کردن...' : 'وارد کردن'}
+            {importing ? t('fileImportImporting') : t('fileImportImport')}
           </button>
         </div>
 
         {/* Result */}
         {result && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
-            <h3 className="text-sm font-bold text-green-800 dark:text-green-300 mb-2">✅ وارد کردن موفق</h3>
+            <h3 className="text-sm font-bold text-green-800 dark:text-green-300 mb-2">✅ {t('fileImportSuccess')}</h3>
             <p className="text-sm text-green-700 dark:text-green-400">
-              {result.rows_affected.toLocaleString()} ردیف وارد شد
+              {result.rows_affected.toLocaleString()} {t('tableEditorRows')}
             </p>
             {result.warnings && result.warnings.length > 0 && (
               <div className="mt-2 space-y-1">
@@ -225,7 +223,7 @@ export default function FileImportPage() {
               onClick={() => navigate(`/db-manager/table/${source}/${tableName}`)}
               className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
             >
-              مشاهده جدول →
+              {t('dbNexivoTables')} →
             </button>
           </div>
         )}

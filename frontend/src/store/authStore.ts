@@ -10,6 +10,9 @@ interface User {
   role: 'finance' | 'sales' | 'ceo' | 'admin'
   department: string
   isStaff?: boolean
+  last_module?: string
+  nexivo_access?: boolean
+  finance_access?: boolean
 }
 
 interface AuthState {

@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import api from '../api/client'
 import { LogIn } from 'lucide-react'
+import { useTranslation } from '../utils/i18n'
 
 export default function LoginPage() {
+  const { t } = useTranslation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -20,9 +22,9 @@ export default function LoginPage() {
     try {
       const res = await api.post('/auth/login/', { username, password })
       setAuth(res.data.token, { ...res.data.user, isStaff: res.data.user.is_staff })
-      navigate('/dashboards')
+      navigate('/')
     } catch (err: unknown) {
-      let message = 'خطای ورود'
+      let message = t('loginGenericError')
       if (err instanceof Error) {
         message = err.message
       } else if (err && typeof err === 'object' && 'response' in err) {
@@ -42,32 +44,30 @@ export default function LoginPage() {
           <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mb-4">
             <LogIn className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">نکسیوو</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">پلتفرم داشبورد هوشمند</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('nexivoBrand')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('smartDashboard')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نام کاربری</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('username')}</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-              placeholder="نام کاربری خود را وارد کنید"
-              dir="rtl"
+              placeholder={t('loginUsernamePlaceholder')}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رمز عبور</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('password')}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-              placeholder="رمز عبور خود را وارد کنید"
-              dir="rtl"
+              placeholder={t('loginPasswordPlaceholder')}
               required
             />
           </div>
@@ -83,7 +83,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'در حال ورود...' : 'ورود'}
+            {loading ? t('loginLoading') : t('loginBtn')}
           </button>
         </form>
       </div>

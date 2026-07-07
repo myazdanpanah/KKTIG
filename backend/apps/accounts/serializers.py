@@ -20,8 +20,9 @@ class UserSerializer(serializers.ModelSerializer):
             "division", "division_name",
             "team", "team_name",
             "reports_to", "reports_to_name",
+            "last_module", "nexivo_access", "finance_access",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "is_staff"]
 
     def get_reports_to_name(self, obj):
         if obj.reports_to:

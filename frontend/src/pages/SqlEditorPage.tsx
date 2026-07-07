@@ -7,6 +7,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
 import { useAuthStore } from '../store/authStore'
+import { useTranslation } from '../utils/i18n'
 
 export default function SqlEditorPage() {
   const [sqlText, setSqlText] = useState('')
@@ -21,6 +22,7 @@ export default function SqlEditorPage() {
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<string[]>([])
   const { toast } = useToast()
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role === 'admin' || user?.role === 'ceo'
 
@@ -28,8 +30,8 @@ export default function SqlEditorPage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center" dir="rtl">
         <div className="text-center">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">دسترسی غیرمجاز</h2>
-          <p className="text-gray-500 dark:text-gray-400">فقط مدیر سیستم و مدیرعامل به SQL Editor دسترسی دارند</p>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{t('sqlEditorAccessDenied')}</h2>
+          <p className="text-gray-500 dark:text-gray-400">{t('sqlEditorAccessDeniedDesc')}</p>
         </div>
       </div>
     )
@@ -45,7 +47,7 @@ export default function SqlEditorPage() {
       setResult(res.data)
       setHistory((prev) => [sqlText, ...prev.slice(0, 19)])
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'خطا در اجرای کوئری'
+      const msg = err instanceof Error ? err.message : t('sqlEditorQueryError')
       setError(msg)
     } finally {
       setLoading(false)
@@ -63,7 +65,7 @@ export default function SqlEditorPage() {
     a.download = 'query-result.csv'
     a.click()
     URL.revokeObjectURL(url)
-    toast('CSV دانلود شد', 'success')
+    toast(t('sqlEditorCsvDownloaded'), 'success')
   }
 
   const copyToClipboard = () => {
@@ -71,11 +73,11 @@ export default function SqlEditorPage() {
     const header = result.columns.join('\t')
     const rows = result.data.map((row) => result.columns!.map((c) => String(row[c] ?? '')).join('\t')).join('\n')
     navigator.clipboard.writeText(header + '\n' + rows)
-    toast('در کلیپبورد کپی شد', 'success')
+    toast(t('sqlEditorCopied'), 'success')
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="max-w-full mx-auto flex items-center justify-between">
@@ -99,7 +101,7 @@ export default function SqlEditorPage() {
               className="flex items-center gap-2 px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              اجرا
+              {t('sqlEditorRun')}
             </button>
           </div>
         </div>
@@ -138,16 +140,16 @@ export default function SqlEditorPage() {
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {result.columns
-                  ? `${result.row_count} ردیف · ${result.columns.length} ستون`
-                  : `${result.rows_affected} ردیف تأثیر یافت`
+                  ? `${result.row_count} ${t('sqlEditorRows')} · ${result.columns.length} ${t('sqlEditorColumns')}`
+                  : `${result.rows_affected} ${t('sqlEditorRows')} ${t('sqlEditorAffected')}`
                 }
               </div>
               {result.columns && (
                 <div className="flex items-center gap-2">
-                  <button onClick={copyToClipboard} className="p-1.5 text-gray-400 hover:text-indigo-600 transition" title="کپی">
+                  <button onClick={copyToClipboard} className="p-1.5 text-gray-400 hover:text-indigo-600 transition" title={t('sqlEditorCopy')}>
                     <Copy className="w-4 h-4" />
                   </button>
-                  <button onClick={exportCsv} className="p-1.5 text-gray-400 hover:text-indigo-600 transition" title="خروجی CSV">
+                  <button onClick={exportCsv} className="p-1.5 text-gray-400 hover:text-indigo-600 transition" title={t('sqlEditorExportCsv')}>
                     <Download className="w-4 h-4" />
                   </button>
                 </div>

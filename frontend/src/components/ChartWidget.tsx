@@ -280,7 +280,7 @@ function buildChartOption(
         left: 'center',
         top: 'middle',
         style: {
-          text: 'داده\u200cای موجود نیست',
+          text: 'No data available',
           fontSize: 14,
           fill: '#9ca3af',
         },
@@ -912,7 +912,7 @@ export default function ChartWidget({
             left: 'center',
             top: 'middle',
             style: {
-              text: 'منبع داده تعیین نشده\nاز پنل تنظیمات، مجموعه داده را انتخاب کنید',
+              text: 'No data source defined',
               fontSize: 13,
               fill: '#9ca3af',
               textAlign: 'center',
@@ -1032,7 +1032,7 @@ export default function ChartWidget({
       }
     } catch (err: unknown) {
       console.error('Chart fetch error:', err)
-      let message = 'خطا در بارگذاری داده'
+      let message = 'Error loading data'
       if (err instanceof Error && err.message.startsWith('MAP_NOT_REGISTERED:')) {
         const mapName = err.message.split(':')[1]
         const mapUrl = (widget.chartConfig as Record<string, unknown>)?.mapUrl as string | undefined
@@ -1056,7 +1056,7 @@ export default function ChartWidget({
             }
             return
           } catch {
-            message = `خطا در بارگذاری فایل نقشه از آدرس: ${mapUrl}`
+            message = `Error loading map from: ${mapUrl}`
           }
         } else {
           message = `نقشه "${mapName}" ثبت نشده است. لطفاً فایل GeoJSON نقشه را در تنظیمات نمودار تنظیم کنید.`
@@ -1080,7 +1080,7 @@ export default function ChartWidget({
       <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-          در حال بارگذاری...
+          Loading...
         </div>
       </div>
     )
@@ -1153,7 +1153,7 @@ export default function ChartWidget({
     if (error) {
       return (
         <div className="flex items-center justify-center h-full p-4">
-          <span className="text-sm text-red-500 text-center">خطا: {error}</span>
+          <span className="text-sm text-red-500 text-center">Error: {error}</span>
         </div>
       )
     }
@@ -1180,7 +1180,7 @@ export default function ChartWidget({
     }
     return (
       <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-        منبع داده تعیین نشده
+        No data source
       </div>
     )
   }
@@ -1189,7 +1189,7 @@ export default function ChartWidget({
     if (error) {
       return (
         <div className="flex items-center justify-center h-full p-4">
-          <span className="text-sm text-red-500 text-center">خطا: {error}</span>
+          <span className="text-sm text-red-500 text-center">Error: {error}</span>
         </div>
       )
     }
@@ -1220,7 +1220,7 @@ export default function ChartWidget({
     }
     return (
       <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-        منبع داده تعیین نشده
+        No data source
       </div>
     )
   }

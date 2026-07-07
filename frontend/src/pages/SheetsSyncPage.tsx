@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Plus, Trash2, RefreshCw, Play, Clock, CheckCircle, XCircle, Pause } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../components/Toast'
+import { useTranslation } from '../utils/i18n'
+import { formatDateTime } from '../utils/formatDate'
 
 interface SyncConfig {
   id: number
@@ -26,6 +28,7 @@ const EMPTY_FORM = {
 }
 
 export default function SheetsSyncPage() {
+  const { t } = useTranslation()
   const [syncs, setSyncs] = useState<SyncConfig[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -42,7 +45,7 @@ export default function SheetsSyncPage() {
       const res = await api.get('/db-manager/syncs/')
       setSyncs(res.data)
     } catch {
-      toast('خطا در بارگذاری همگام‌سازی‌ها', 'error')
+      toast(t('syncLoadError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -52,17 +55,17 @@ export default function SheetsSyncPage() {
     try {
       if (editingId) {
         await api.put(`/db-manager/syncs/${editingId}/`, form)
-        toast('همگام‌سازی به‌روزرسانی شد', 'success')
+        toast(t('syncUpdated'), 'success')
       } else {
         await api.post('/db-manager/syncs/', form)
-        toast('همگام‌سازی اضافه شد', 'success')
+        toast(t('syncCreated'), 'success')
       }
       setForm(EMPTY_FORM)
       setEditingId(null)
       setShowForm(false)
       loadSyncs()
     } catch {
-      toast('خطا در ذخیره', 'error')
+      toast(t('syncSaveError'), 'error')
     }
   }
 
@@ -70,23 +73,23 @@ export default function SheetsSyncPage() {
     setRunningId(id)
     try {
       await api.post(`/db-manager/syncs/${id}/run/`)
-      toast('همگام‌سازی اجرا شد', 'success')
+      toast(t('syncRunSuccess'), 'success')
       loadSyncs()
     } catch {
-      toast('خطا در اجرای همگام‌سازی', 'error')
+      toast(t('syncRunError'), 'error')
     } finally {
       setRunningId(null)
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('آیا از حذف این همگام‌سازی اطمینان دارید؟')) return
+    if (!window.confirm(t('syncDeleteConfirm'))) return
     try {
       await api.delete(`/db-manager/syncs/${id}/`)
-      toast('همگام‌سازی حذف شد', 'success')
+      toast(t('syncDeleted'), 'success')
       loadSyncs()
     } catch {
-      toast('خطا در حذف', 'error')
+      toast(t('syncDeleteError'), 'error')
     }
   }
 
@@ -107,21 +110,21 @@ export default function SheetsSyncPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/db-manager" className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition">
               <ArrowRight className="w-5 h-5" />
             </Link>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">همگام‌سازی Google Sheets</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('syncTitle')}</h1>
           </div>
           <button
             onClick={() => { setShowForm(!showForm); setEditingId(null); setForm(EMPTY_FORM) }}
             className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
           >
             <Plus className="w-4 h-4" />
-            افزودن همگام‌سازی
+            {t('syncAdd')}
           </button>
         </div>
       </header>
@@ -130,10 +133,10 @@ export default function SheetsSyncPage() {
         {showForm && (
           <div className="bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-700 rounded-xl p-6 space-y-4">
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              {editingId ? 'ویرایش همگام‌سازی' : 'همگام‌سازی جدید'}
+              {editingId ? t('syncEdit') : t('syncNew')}
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <input placeholder="نام" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+              <input placeholder={t('payersPlaceholderName')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
               <input placeholder="Spreadsheet ID" value={form.spreadsheet_id} onChange={(e) => setForm({ ...form, spreadsheet_id: e.target.value })}
                 className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-mono" />
@@ -155,10 +158,10 @@ export default function SheetsSyncPage() {
             </div>
             <div className="flex items-center gap-3">
               <button onClick={handleSave} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
-                {editingId ? 'ذخیره' : 'افزودن'}
+                {editingId ? t('save') : t('payersAdd')}
               </button>
               <button onClick={() => { setShowForm(false); setEditingId(null) }} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition">
-                انصراف
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -169,7 +172,7 @@ export default function SheetsSyncPage() {
         ) : syncs.length === 0 ? (
           <div className="text-center py-16">
             <Clock className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">همگام‌سازی وجود ندارد</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('syncNoData')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -179,15 +182,15 @@ export default function SheetsSyncPage() {
                   <div className="flex items-center gap-3">
                     {statusIcon(s.last_sync_status)}
                     <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{s.name}</span>
-                    {!s.is_active && <span className="px-2 py-0.5 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full">غیرفعال</span>}
+                    {!s.is_active && <span className="px-2 py-0.5 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full">{t('syncInactive')}</span>}
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => handleRun(s.id)} disabled={runningId === s.id}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50">
                       {runningId === s.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
-                      اجرای دستی
+                      {t('syncRunManually')}
                     </button>
-                    <button onClick={() => startEdit(s)} className="text-xs text-indigo-600 hover:underline">ویرایش</button>
+                    <button onClick={() => startEdit(s)} className="text-xs text-indigo-600 hover:underline">{t('adminEdit')}</button>
                     <button onClick={() => handleDelete(s.id)} className="p-1.5 text-gray-400 hover:text-red-600 transition">
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -202,7 +205,7 @@ export default function SheetsSyncPage() {
                 </div>
                 {s.last_sync_at && (
                   <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">
-                    آخرین اجرا: {new Date(s.last_sync_at).toLocaleString('fa-IR')}
+                    {t('syncLastRun')}: {formatDateTime(s.last_sync_at)}
                   </div>
                 )}
                 {s.last_error && (
