@@ -347,19 +347,70 @@ def approval_action(request, pk, action):
 @finance_permission('can_view_finance')
 def finance_dashboard(request):
     company = _company(request.user)
-    from datetime import date
+    from datetime import date, timedelta
     today = date.today()
     month_start = today.replace(day=1)
+    month_end = (month_start + timedelta(days=32)).replace(day=1)
     invoices = Invoice.objects.filter(company=company)
     payments = Payment.objects.filter(company=company)
     payers = Payer.objects.filter(company=company)
+
+    # Efficient balance calculation using DB aggregates
+    from django.db.models import Sum, Count, Q
+    invoices_agg = invoices.aggregate(
+        total_amount=Sum('amount'),
+        monthly_amount=Sum('amount', filter=Q(issue_date__gte=month_start)),
+        draft_count=Count('id', filter=Q(status='draft')),
+        submitted_count=Count('id', filter=Q(status='submitted')),
+        approved_count=Count('id', filter=Q(status='approved')),
+        rejected_count=Count('id', filter=Q(status='rejected')),
+    )
+    payments_agg = payments.aggregate(
+        total_amount=Sum('amount'),
+        monthly_amount=Sum('amount', filter=Q(payment_date__gte=month_start)),
+    )
     total_receivable = sum(p.balance for p in payers if p.balance > 0)
-    total_invoiced = sum(inv.amount for inv in invoices)
-    total_paid = sum(p.amount for p in payments)
-    monthly_invoiced = sum(inv.amount for inv in invoices.filter(issue_date__gte=month_start))
-    monthly_paid = sum(p.amount for p in payments.filter(payment_date__gte=month_start))
+    total_invoiced = invoices_agg['total_amount'] or 0
+    total_paid = payments_agg['total_amount'] or 0
+    monthly_invoiced = invoices_agg['monthly_amount'] or 0
+    monthly_paid = payments_agg['monthly_amount'] or 0
     pending_approvals = ApprovalRequest.objects.filter(company=company, status='pending').count()
-    top_debtors = [{'name': p.name, 'code': p.code, 'balance': p.balance} for p in sorted(payers, key=lambda x: x.balance, reverse=True)[:10] if p.balance > 0]
+
+    # Credits & manual debts
+    credits_total = Credit.objects.filter(company=company).aggregate(t=Sum('amount'))['t'] or 0
+    debts_total = ManualDebt.objects.filter(company=company).aggregate(t=Sum('amount'))['t'] or 0
+
+    # Top debtors (efficient - only positive balances)
+    top_debtors = [
+        {'name': p.name, 'code': p.code, 'balance': p.balance}
+        for p in payers.filter(balance__gt=0).order_by('-balance')[:10]
+    ]
+
+    # Recent invoices (last 5)
+    recent_invoices = [
+        {'id': inv.id, 'letter_number': inv.letter_number, 'payer_name': inv.payer.name,
+         'amount': inv.amount, 'status': inv.status, 'issue_date': str(inv.issue_date)}
+        for inv in invoices.select_related('payer').order_by('-created_at')[:5]
+    ]
+
+    # Recent payments (last 5)
+    recent_payments = [
+        {'id': pmt.id, 'payment_code': pmt.payment_code, 'payer_name': pmt.payer.name,
+         'amount': pmt.amount, 'date': str(pmt.payment_date), 'tracking': pmt.tracking_number}
+        for pmt in payments.select_related('payer').order_by('-created_at')[:5]
+    ]
+
+    # Revenue by invoice type (single query)
+    revenue_by_type = list(
+        Invoice.objects.filter(company=company)
+        .values('invoice_type__name', 'invoice_type__code')
+        .annotate(amount=Sum('amount'))
+        .filter(amount__gt=0)
+        .order_by('-amount')
+        .values_list('invoice_type__name', 'invoice_type__code', 'amount')
+    )
+    revenue_by_type = [{'name': r[0] or 'Unknown', 'code': r[1] or '', 'amount': r[2]} for r in revenue_by_type]
+
     return Response({
         'total_receivable': total_receivable,
         'total_invoiced': total_invoiced,
@@ -370,4 +421,13 @@ def finance_dashboard(request):
         'total_payers': payers.count(),
         'total_invoices': invoices.count(),
         'top_debtors': top_debtors,
+        'draft_invoices': invoices_agg['draft_count'] or 0,
+        'submitted_invoices': invoices_agg['submitted_count'] or 0,
+        'approved_invoices': invoices_agg['approved_count'] or 0,
+        'rejected_invoices': invoices_agg['rejected_count'] or 0,
+        'total_credits': credits_total,
+        'total_manual_debts': debts_total,
+        'recent_invoices': recent_invoices,
+        'recent_payments': recent_payments,
+        'revenue_by_type': revenue_by_type,
     })
