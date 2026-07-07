@@ -14,31 +14,35 @@ export default function TemplateEditorPage() {
   const [sourceMode, setSourceMode] = useState(false)
   const editorRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const initializedRef = useRef(false)
 
   useEffect(() => {
+    let cancelled = false
     financeApi.getActiveTemplate().then(r => {
+      if (cancelled) return
       const initialHtml = r.data.html || getDefaultHtml()
       const initialCss = r.data.css || getDefaultCss()
       setHtml(initialHtml)
       setCss(initialCss)
-      if (editorRef.current && !initializedRef.current) {
-        editorRef.current.innerHTML = initialHtml
-        initializedRef.current = true
-      }
       setLoading(false)
     }).catch(() => {
+      if (cancelled) return
       const initialHtml = getDefaultHtml()
       const initialCss = getDefaultCss()
       setHtml(initialHtml)
       setCss(initialCss)
-      if (editorRef.current && !initializedRef.current) {
-        editorRef.current.innerHTML = initialHtml
-        initializedRef.current = true
-      }
       setLoading(false)
     })
+    return () => { cancelled = true }
   }, [])
+
+  // Sync contentEditable innerHTML when html changes (e.g. switching from source mode)
+  // or on initial load. Only set innerHTML when the ref exists and the new content
+  // differs from what's currently in the DOM to avoid cursor disruption.
+  useEffect(() => {
+    if (editorRef.current && html && editorRef.current.innerHTML !== html) {
+      editorRef.current.innerHTML = html
+    }
+  }, [html])
 
   const getDefaultHtml = () => `<div class="invoice-header">صورتحساب {{ service_type }} شماره: {{ invoice_number }} تاریخ: {{ invoice_date }}</div>
 <div class="box-title">مشخصات فروشنده</div>
