@@ -50,7 +50,7 @@ interface UserOption {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  ceo: 'مدیرعامل', finance: 'مالی', sales: 'فروش', admin: 'مدیر سیستم',
+  ceo: 'CEO', finance: 'Finance', sales: 'Sales', admin: 'Admin',
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -147,8 +147,8 @@ export default function OrganizationPage() {
     }
   }
 
-  const handleDelete = async (type: 'company' | 'division' | 'team', id: number, name: string) => {
-    if (!window.confirm(`آیا از حذف «${name}» اطمینان دارید؟`)) return
+  const handleDelete = async (type: 'company' | 'division' | 'team', id: number, _name: string) => {
+    if (!window.confirm(t('orgPageDeleteConfirm'))) return
     try {
       if (type === 'company') await api.delete(`/auth/companies/${id}/`)
       else if (type === 'division') await api.delete(`/auth/divisions/${id}/`)
@@ -175,14 +175,14 @@ export default function OrganizationPage() {
                 <FolderTree className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">ساختار سازمانی</h1>
-                <p className="text-xs text-gray-500">شرکت → واحد → تیم → کارمند</p>
+                <h1 className="text-lg font-bold text-gray-900">{t('orgPageTitle')}</h1>
+                <p className="text-xs text-gray-500">{t('orgPageSubtitle')}</p>
               </div>
             </div>
           </div>
           <button onClick={() => openCreate('company')} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition text-sm font-medium">
             <Building2 className="w-4 h-4" />
-            شرکت جدید
+            {t('orgPageTitle')}
           </button>
         </div>
       </header>
@@ -193,19 +193,19 @@ export default function OrganizationPage() {
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center"><Building2 className="w-5 h-5 text-indigo-600" /></div>
-              <div><p className="text-2xl font-bold text-gray-900">{tree.length}</p><p className="text-xs text-gray-500">شرکت</p></div>
+              <div><p className="text-2xl font-bold text-gray-900">{tree.length}</p><p className="text-xs text-gray-500">{t('orgStatCompany')}</p></div>
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center"><FolderTree className="w-5 h-5 text-blue-600" /></div>
-              <div><p className="text-2xl font-bold text-gray-900">{tree.reduce((s, c) => s + c.divisions.length, 0)}</p><p className="text-xs text-gray-500">واحد</p></div>
+              <div><p className="text-2xl font-bold text-gray-900">{tree.reduce((s, c) => s + c.divisions.length, 0)}</p><p className="text-xs text-gray-500">{t('orgStatDivision')}</p></div>
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><Users className="w-5 h-5 text-emerald-600" /></div>
-              <div><p className="text-2xl font-bold text-gray-900">{tree.reduce((s, c) => s + c.divisions.reduce((s2, d) => s2 + d.teams.reduce((s3, t) => s3 + t.member_count, 0), 0), 0)}</p><p className="text-xs text-gray-500">تیم</p></div>
+              <div><p className="text-2xl font-bold text-gray-900">{tree.reduce((s, c) => s + c.divisions.reduce((s2, d) => s2 + d.teams.reduce((s3, t) => s3 + t.member_count, 0), 0), 0)}</p><p className="text-xs text-gray-500">{t('orgStatTeam')}</p></div>
             </div>
           </div>
         </div>
@@ -213,16 +213,16 @@ export default function OrganizationPage() {
         {/* Tree View */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-bold text-gray-900">درخت سازمانی</h2>
+            <h2 className="font-bold text-gray-900">{t('orgChartTitle')}</h2>
           </div>
 
           {loading ? (
-            <div className="p-12 text-center text-gray-500">در حال بارگذاری...</div>
+            <div className="p-12 text-center text-gray-500">{t('loading')}</div>
           ) : tree.length === 0 ? (
             <div className="p-12 text-center">
               <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 mb-4">هنوز شرکتی تعریف نشده</p>
-              <button onClick={() => openCreate('company')} className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition text-sm font-medium">ایجاد اولین شرکت</button>
+              <p className="text-gray-500 mb-4">{t('orgChartEmpty')}</p>
+              <button onClick={() => openCreate('company')} className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition text-sm font-medium">{t('orgPageAddUnit')}</button>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
@@ -238,13 +238,13 @@ export default function OrganizationPage() {
                         <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center"><Building2 className="w-4 h-4 text-indigo-600" /></div>
                         <div>
                           <p className="text-sm font-bold text-gray-900">{company.name}</p>
-                          <p className="text-xs text-gray-500">{company.divisions.length} واحد · {company.employees.length} کارمند مستقیم</p>
+                          <p className="text-xs text-gray-500">{company.divisions.length} {t('orgStatDivision')} · {company.employees.length} {t('orgChartDirectEmployees')}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => openCreate('division', company.id)} className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition" title="افزودن واحد"><Plus className="w-4 h-4" /></button>
-                        <button onClick={() => openEdit('company', company)} className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition" title="ویرایش"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete('company', company.id, company.name)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition" title="حذف"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => openCreate('division', company.id)} className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition" title={t('orgPageAddUnit')}><Plus className="w-4 h-4" /></button>
+                        <button onClick={() => openEdit('company', company)} className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition" title={t('orgPageEdit')}><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete('company', company.id, company.name)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition" title={t('orgPageDelete')}><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
 
@@ -262,11 +262,10 @@ export default function OrganizationPage() {
                                   <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center"><FolderTree className="w-3.5 h-3.5 text-blue-600" /></div>
                                   <div>
                                     <p className="text-sm font-medium text-gray-800">{div.name}</p>
-                                    <p className="text-[11px] text-gray-500">{div.manager_name ? `مدیر: ${div.manager_name}` : 'بدون مدیر'} · {div.teams.length} تیم · {div.employees.length} کارمند</p>
+                                    <p className="text-[11px] text-gray-500">{div.manager_name ? `${t('orgChartManager')}: ${div.manager_name}` : t('adminFormNoManager')} · {div.teams.length} {t('orgStatTeam')} · {div.employees.length} {t('orgStatMember')}</p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <button onClick={() => openCreate('team', div.id)} className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition" title="افزودن تیم"><Plus className="w-3.5 h-3.5" /></button>
+                                <div className="flex items-center gap-1">                                   <button onClick={() => openCreate('team', div.id)} className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition" title={t('orgPageAddUnit')}><Plus className="w-3.5 h-3.5" /></button>
                                   <button onClick={() => openEdit('division', div, company.id)} className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition"><Pencil className="w-3.5 h-3.5" /></button>
                                   <button onClick={() => handleDelete('division', div.id, div.name)} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
@@ -285,8 +284,7 @@ export default function OrganizationPage() {
                                             {isTeamOpen ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />}
                                             <Users className="w-3.5 h-3.5 text-emerald-500" />
                                             <div>
-                                              <p className="text-xs font-medium text-gray-700">{team.name}</p>
-                                              <p className="text-[10px] text-gray-500">{team.manager_name ? `سرپرست: ${team.manager_name}` : 'بدون سرپرست'} · {team.member_count} عضو</p>
+                                              <p className="text-xs font-medium text-gray-700">{team.name}</p>                                               <p className="text-[10px] text-gray-500">{team.manager_name ? `${t('orgChartTeamLead')}: ${team.manager_name}` : t('adminFormNoManager')} · {team.member_count} {t('orgChartMembers')}</p>
                                             </div>
                                           </div>
                                           <div className="flex items-center gap-1">
@@ -298,8 +296,7 @@ export default function OrganizationPage() {
                                         {/* Members */}
                                         {isTeamOpen && (
                                           <div className="mr-8 mb-1 border-r-2 border-emerald-100">
-                                            {team.members.length === 0 ? (
-                                              <p className="px-6 py-1 text-[10px] text-gray-400 italic">بدون عضو</p>
+                                            {team.members.length === 0 ? (                                               <p className="px-6 py-1 text-[10px] text-gray-400 italic">{t('orgChartNoMembers')}</p>
                                             ) : (
                                               team.members.map((m) => (
                                                 <div key={m.id} className="px-6 py-1 flex items-center gap-2">
@@ -316,8 +313,7 @@ export default function OrganizationPage() {
                                   })}
                                   {/* Division-level employees */}
                                   {div.employees.length > 0 && (
-                                    <div className="mr-8 mb-1 border-r-2 border-blue-100">
-                                      <p className="px-6 py-1 text-[10px] text-gray-400 font-medium">کارمندان واحد:</p>
+                                    <div className="mr-8 mb-1 border-r-2 border-blue-100">                                       <p className="px-6 py-1 text-[10px] text-gray-400 font-medium">{t('orgChartDirectEmployees')}:</p>
                                       {div.employees.map((e) => (
                                         <div key={e.id} className="px-6 py-1 flex items-center gap-2">
                                           <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[9px] font-bold text-gray-600">{e.name.charAt(0)}</div>
@@ -334,8 +330,7 @@ export default function OrganizationPage() {
                         })}
                         {/* Company-level employees */}
                         {company.employees.length > 0 && (
-                          <div className="px-6 py-2 border-r-2 border-indigo-100">
-                            <p className="text-[10px] text-gray-400 font-medium mb-1">کارمندان مستقیم شرکت:</p>
+                          <div className="px-6 py-2 border-r-2 border-indigo-100">                             <p className="text-[10px] text-gray-400 font-medium mb-1">{t('orgChartDirectEmployees')}:</p>
                             <div className="flex flex-wrap gap-2">
                               {company.employees.map((e) => (
                                 <span key={e.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-[10px] text-gray-600">
@@ -361,24 +356,22 @@ export default function OrganizationPage() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setModalType(null)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900">
-                {editingId ? 'ویرایش' : 'ایجاد'} {modalType === 'company' ? 'شرکت' : modalType === 'division' ? 'واحد' : 'تیم'}
-              </h3>
+              <h3 className="font-bold text-gray-900">                {editingId ? t('orgPageEdit') : t('orgPageCreated')} {modalType === 'company' ? t('orgStatCompany') : modalType === 'division' ? t('orgStatDivision') : t('orgStatTeam')}</h3>
               <button onClick={() => setModalType(null)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">نام *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t('adminFormUsername')}</label>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">توضیحات</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t('description')}</label>
                 <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">مدیر</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t('orgChartManager')}</label>
                 <select value={form.manager || ''} onChange={(e) => setForm({ ...form, manager: Number(e.target.value) })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
-                  <option value="">انتخاب مدیر...</option>
+                  <option value="">{t('adminFormNoManager')}...</option>
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>{u.first_name || u.last_name ? `${u.first_name} ${u.last_name}` : u.username} (@{u.username})</option>
                   ))}
@@ -386,11 +379,9 @@ export default function OrganizationPage() {
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
-              <button onClick={() => setModalType(null)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition">انصراف</button>
+              <button onClick={() => setModalType(null)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition">{t('cancel')}</button>
               <button onClick={handleSubmit} className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 transition font-medium flex items-center gap-2">
-                <Check className="w-4 h-4" />
-                {editingId ? 'ذخیره' : 'ایجاد'}
-              </button>
+                <Check className="w-4 h-4" />                {editingId ? t('save') : t('orgPageCreated')}</button>
             </div>
           </div>
         </div>

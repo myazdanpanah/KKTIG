@@ -52,24 +52,11 @@ interface DataFilter {
   val: string | string[]
 }
 
-const FILTER_OPERATORS = [
-  { value: 'eq', label: 'برابر با' },
-  { value: 'neq', label: 'نابرابر با' },
-  { value: 'contains', label: 'شامل' },
-  { value: 'gt', label: 'بزرگتر از' },
-  { value: 'gte', label: 'بزرگتر یا مساوی' },
-  { value: 'lt', label: 'کوچکتر از' },
-  { value: 'lte', label: 'کوچکتر یا مساوی' },
-  { value: 'starts_with', label: 'شروع با' },
-  { value: 'ends_with', label: 'پایان با' },
-  { value: 'in', label: 'در لیست' },
-]
-
 const ROLE_LABELS: Record<string, string> = {
-  ceo: 'مدیرعامل',
-  finance: 'مالی',
-  sales: 'فروش',
-  admin: 'مدیر سیستم',
+  ceo: 'CEO',
+  finance: 'Finance',
+  sales: 'Sales',
+  admin: 'Admin',
 }
 
 export default function DashboardAssignPage() {
@@ -186,7 +173,7 @@ export default function DashboardAssignPage() {
 
       if (editingAssignment) {
         await api.put(`/dashboards/assignments/${editingAssignment.id}/`, payload)
-        toast('تخصیص به‌روزرسانی شد', 'success')
+        toast(t('dashAssignUpdated'), 'success')
       } else {
         await api.post('/dashboards/assignments/', payload)
         toast(t('dashboardCreated'), 'success')
@@ -200,7 +187,9 @@ export default function DashboardAssignPage() {
   }
 
   const handleDelete = async (assignment: Assignment) => {
-    if (!window.confirm(`آیا از حذف تخصیص «${assignment.dashboard_name}» برای «${assignment.assigned_to_name || assignment.assigned_to_username}» اطمینان دارید؟`)) return
+    const dName = assignment.dashboard_name
+    const uName = assignment.assigned_to_name || assignment.assigned_to_username
+    if (!window.confirm(`Delete assignment «${dName}» for «${uName}»?`)) return
     try {
       await api.delete(`/dashboards/assignments/${assignment.id}/`)
       toast(t('dashboardDeleted'), 'success')
@@ -271,14 +260,15 @@ export default function DashboardAssignPage() {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm font-medium"
             >
               <Users className="w-4 h-4" />
-              {t('filterBarFilters')} {t('filterBarTextSearch')}
+              <Users className="w-4 h-4" />
+              {t('dashAssignBulkTitle')}
             </button>
             <button
               onClick={openCreateModal}
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition text-sm font-medium"
             >
               <UserPlus className="w-4 h-4" />
-              {t('dashAssignContains')} {t('dashAssignIn')}
+              {t('dashAssignNew')}
             </button>
           </div>
         </div>
@@ -294,7 +284,7 @@ export default function DashboardAssignPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{assignments.length}</p>
-                <p className="text-xs text-gray-500">تخصیص فعال</p>
+                <p className="text-xs text-gray-500">{t('dashAssignActive')}</p>
               </div>
             </div>
           </div>
@@ -305,7 +295,7 @@ export default function DashboardAssignPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{dashboards.length}</p>
-                <p className="text-xs text-gray-500">داشبورد</p>
+                <p className="text-xs text-gray-500">{t('dashAssignDashboards')}</p>
               </div>
             </div>
           </div>
@@ -318,7 +308,7 @@ export default function DashboardAssignPage() {
                 <p className="text-2xl font-bold text-gray-900">
                   {assignments.filter((a) => a.data_filters?.length > 0).length}
                 </p>
-                <p className="text-xs text-gray-500">با فیلتر داده</p>
+                <p className="text-xs text-gray-500">{t('dashAssignWithDataFilter')}</p>
               </div>
             </div>
           </div>
@@ -331,7 +321,7 @@ export default function DashboardAssignPage() {
                 <p className="text-2xl font-bold text-gray-900">
                   {assignments.filter((a) => a.visible_pages?.length > 0).length}
                 </p>
-                <p className="text-xs text-gray-500">با محدودیت صفحه</p>
+                <p className="text-xs text-gray-500">{t('dashAssignWithPageLimit')}</p>
               </div>
             </div>
           </div>
@@ -340,20 +330,20 @@ export default function DashboardAssignPage() {
         {/* Assignments List */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="font-bold text-gray-900">لیست تخصیص‌ها ({assignments.length})</h2>
+            <h2 className="font-bold text-gray-900">{t('dashAssignList')} ({assignments.length})</h2>
           </div>
 
           {loading ? (
-            <div className="p-12 text-center text-gray-500">در حال بارگذاری...</div>
+            <div className="p-12 text-center text-gray-500">{t('loading')}</div>
           ) : assignments.length === 0 ? (
             <div className="p-12 text-center">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 mb-4">هنوز تخصیصی ایجاد نشده</p>
+              <p className="text-gray-500 mb-4">{t('dashAssignNone')}</p>
               <button
                 onClick={openCreateModal}
                 className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition text-sm font-medium"
               >
-                ایجاد اولین تخصیص
+                {t('dashAssignCreateFirst')}
               </button>
             </div>
           ) : (
@@ -371,9 +361,9 @@ export default function DashboardAssignPage() {
                           <span className="text-gray-400 mr-2 text-xs">@{assignment.assigned_to_username}</span>
                         </p>
                         <p className="text-xs text-gray-500">
-                          داشبورد: <span className="font-medium">{assignment.dashboard_name}</span>
+                          {t('dashAssignDashboard')}: <span className="font-medium">{assignment.dashboard_name}</span>
                           {assignment.assigned_by_username && (
-                            <span className="mr-2">· توسط {assignment.assigned_by_username}</span>
+                            <span className="mr-2">· {t('dashAssignBy')} {assignment.assigned_by_username}</span>
                           )}
                         </p>
                       </div>
@@ -382,18 +372,18 @@ export default function DashboardAssignPage() {
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium ${
                         assignment.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                       }`}>
-                        {assignment.is_active ? 'فعال' : 'غیرفعال'}
+                        {assignment.is_active ? t('active') : t('inactive')}
                       </span>
                       {assignment.data_filters?.length > 0 && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-lg text-xs font-medium">
                           <Filter className="w-3 h-3" />
-                          {assignment.data_filters.length} فیلتر
+                          {assignment.data_filters.length} {t('dashAssignFilter')}
                         </span>
                       )}
                       {assignment.visible_pages?.length > 0 && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium">
                           <Eye className="w-3 h-3" />
-                          {assignment.visible_pages.length} صفحه
+                          {assignment.visible_pages.length} {t('dashAssignPage')}
                         </span>
                       )}
                       <button
@@ -423,12 +413,12 @@ export default function DashboardAssignPage() {
                       {/* Data Filters */}
                       {assignment.data_filters?.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-medium text-gray-500 mb-2">فیلترهای داده:</h4>
+                          <h4 className="text-xs font-medium text-gray-500 mb-2">{t('dashAssignDataFilters')}:</h4>
                           <div className="space-y-1">
                             {assignment.data_filters.map((f, i) => (
                               <div key={i} className="flex items-center gap-2 text-xs bg-amber-50 px-3 py-1.5 rounded-lg">
                                 <span className="font-medium text-amber-800">{f.col}</span>
-                                <span className="text-amber-600">{FILTER_OPERATORS.find((op) => op.value === f.op)?.label || f.op}</span>
+                                <span className="text-amber-600">{{eq: t('filterOpEq'), neq: t('filterOpNeq'), contains: t('filterOpContains'), gt: t('filterOpGt'), gte: t('filterOpGte'), lt: t('filterOpLt'), lte: t('filterOpLte'), starts_with: t('filterOpStartsWith'), ends_with: t('filterOpEndsWith'), in: t('filterOpIn')}[f.op] || f.op}</span>
                                 <span className="text-amber-700">{Array.isArray(f.val) ? f.val.join(', ') : f.val}</span>
                               </div>
                             ))}
@@ -439,14 +429,14 @@ export default function DashboardAssignPage() {
                       {/* Visible Pages */}
                       {assignment.visible_pages?.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-medium text-gray-500 mb-2">صفحات قابل مشاهده:</h4>
+                          <h4 className="text-xs font-medium text-gray-500 mb-2">{t('dashAssignVisiblePages')}:</h4>
                           <div className="flex flex-wrap gap-1">
                             {assignment.visible_pages.map((pageId) => {
                               const page = selectedDashboard?.pages?.find((p) => p.id === pageId) ||
                                 dashboards.find((d) => d.id === assignment.dashboard)?.pages?.find((p) => p.id === pageId)
                               return (
                                 <span key={pageId} className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
-                                  {page?.name || `صفحه ${pageId}`}
+                                  {page?.name || `${t('dashAssignPage')} ${pageId}`}
                                 </span>
                               )
                             })}
@@ -457,14 +447,14 @@ export default function DashboardAssignPage() {
                       {/* Notes */}
                       {assignment.notes && (
                         <div>
-                          <h4 className="text-xs font-medium text-gray-500 mb-1">یادداشت:</h4>
+                          <h4 className="text-xs font-medium text-gray-500 mb-1">{t('dashAssignNotes')}:</h4>
                           <p className="text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">{assignment.notes}</p>
                         </div>
                       )}
 
                       {/* No restrictions */}
                       {(!assignment.data_filters?.length && !assignment.visible_pages?.length) && (
-                        <p className="text-xs text-gray-400 italic">بدون محدودیت - تمام داده‌ها و صفحات قابل مشاهده</p>
+                        <p className="text-xs text-gray-400 italic">{t('dashAssignNoRestrictions')}</p>
                       )}
                     </div>
                   )}
@@ -482,7 +472,7 @@ export default function DashboardAssignPage() {
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h3 className="font-bold text-gray-900">
-                {editingAssignment ? 'ویرایش تخصیص' : 'تخصیص جدید'}
+                {editingAssignment ? t('dashAssignEdit') : t('dashAssignNew')}
               </h3>
               <button onClick={() => setShowModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -492,7 +482,7 @@ export default function DashboardAssignPage() {
             <div className="p-6 space-y-6">
               {/* Dashboard selector */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">داشبورد *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-2">{t('dashAssignDashboard')} *</label>
                 <select
                   value={form.dashboard || ''}
                   onChange={(e) => {
@@ -502,7 +492,7 @@ export default function DashboardAssignPage() {
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   disabled={!!editingAssignment}
                 >
-                  <option value="">انتخاب داشبورد...</option>
+                  <option value="">{t('dashAssignSelectDashboard')}...</option>
                   {dashboards.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
@@ -511,14 +501,14 @@ export default function DashboardAssignPage() {
 
               {/* User selector */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">کاربر *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-2">{t('dashAssignUser')} *</label>
                 <select
                   value={form.assigned_to || ''}
                   onChange={(e) => setForm((prev) => ({ ...prev, assigned_to: Number(e.target.value) }))}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   disabled={!!editingAssignment}
                 >
-                  <option value="">انتخاب کاربر...</option>
+                  <option value="">{t('dashAssignSelectUser')}...</option>
                   {users.filter((u) => u.id !== user?.id).map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.first_name || u.last_name ? `${u.first_name} ${u.last_name}` : u.username}
@@ -532,8 +522,8 @@ export default function DashboardAssignPage() {
               {selectedDashboard && selectedDashboard.pages && selectedDashboard.pages.length > 0 && (
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    صفحات قابل مشاهده
-                    <span className="text-gray-400 font-normal mr-1">(بدون انتخاب = همه صفحات)</span>
+                    {t('dashAssignVisiblePages')}
+                    <span className="text-gray-400 font-normal mr-1">({t('dashAssignNoSelectionAll')})</span>
                   </label>
                   <div className="space-y-1">
                     {selectedDashboard.pages.map((page) => (
@@ -549,7 +539,7 @@ export default function DashboardAssignPage() {
                         />
                         <div>
                           <span className="text-sm font-medium text-gray-700">{page.name}</span>
-                          <span className="text-xs text-gray-400 mr-2">{page.widgets?.length || 0} نمودار</span>
+                          <span className="text-xs text-gray-400 mr-2">{page.widgets?.length || 0} {t('dashAssignChart')}</span>
                         </div>
                       </label>
                     ))}
@@ -561,14 +551,14 @@ export default function DashboardAssignPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-medium text-gray-700">
-                    فیلترهای ردیف داده
-                    <span className="text-gray-400 font-normal mr-1">(محدود کردن داده‌های قابل مشاهده)</span>
+                    {t('dashAssignRowFilters')}
+                    <span className="text-gray-400 font-normal mr-1">({t('dashAssignRowFiltersDesc')})</span>
                   </label>
                   <button
                     onClick={addDataFilter}
                     className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
                   >
-                    + افزودن فیلتر
+                    + {t('dashAssignAddFilter')}
                   </button>
                 </div>
                 {form.data_filters.length > 0 ? (
@@ -579,7 +569,7 @@ export default function DashboardAssignPage() {
                           type="text"
                           value={filter.col}
                           onChange={(e) => updateDataFilter(index, 'col', e.target.value)}
-                          placeholder="نام ستون"
+                          placeholder={t('dashAssignColumnName')}
                           className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                         />
                         <select
@@ -587,7 +577,18 @@ export default function DashboardAssignPage() {
                           onChange={(e) => updateDataFilter(index, 'op', e.target.value)}
                           className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                         >
-                          {FILTER_OPERATORS.map((op) => (
+                          {[
+                            { value: 'eq', label: t('filterOpEq') },
+                            { value: 'neq', label: t('filterOpNeq') },
+                            { value: 'contains', label: t('filterOpContains') },
+                            { value: 'gt', label: t('filterOpGt') },
+                            { value: 'gte', label: t('filterOpGte') },
+                            { value: 'lt', label: t('filterOpLt') },
+                            { value: 'lte', label: t('filterOpLte') },
+                            { value: 'starts_with', label: t('filterOpStartsWith') },
+                            { value: 'ends_with', label: t('filterOpEndsWith') },
+                            { value: 'in', label: t('filterOpIn') },
+                          ].map((op) => (
                             <option key={op.value} value={op.value}>{op.label}</option>
                           ))}
                         </select>
@@ -595,7 +596,7 @@ export default function DashboardAssignPage() {
                           type="text"
                           value={filter.val}
                           onChange={(e) => updateDataFilter(index, 'val', e.target.value)}
-                          placeholder="مقدار"
+                          placeholder={t('dashAssignValue')}
                           className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                         />
                         <button
@@ -608,15 +609,15 @@ export default function DashboardAssignPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-lg">بدون فیلتر - تمام داده‌ها قابل مشاهده</p>
+                  <p className="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-lg">{t('dashAssignNoFilters')}</p>
                 )}
               </div>
 
               {/* Active toggle */}
               <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">وضعیت تخصیص</p>
-                  <p className="text-xs text-gray-500">غیرفعال کردن این تخصیص بدون حذف آن</p>
+                  <p className="text-sm font-medium text-gray-700">{t('dashAssignStatus')}</p>
+                  <p className="text-xs text-gray-500">{t('dashAssignStatusDesc')}</p>
                 </div>
                 <button
                   type="button"
@@ -633,12 +634,12 @@ export default function DashboardAssignPage() {
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">یادداشت مدیر</label>
+                <label className="block text-xs font-medium text-gray-700 mb-2">{t('dashAssignManagerNotes')}</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
                   rows={3}
-                  placeholder="توضیحات درباره این تخصیص..."
+                  placeholder={t('dashAssignNotesPlaceholder')}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none resize-none"
                 />
               </div>
@@ -649,14 +650,14 @@ export default function DashboardAssignPage() {
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition"
               >
-                انصراف
+                {t('cancel')}
               </button>
               <button
                 onClick={handleSubmit}
                 className="px-6 py-2 bg-emerald-600 text-white text-sm rounded-xl hover:bg-emerald-700 transition font-medium flex items-center gap-2"
               >
                 <Check className="w-4 h-4" />
-                {editingAssignment ? 'ذخیره تغییرات' : 'ایجاد تخصیص'}
+                {editingAssignment ? t('dashAssignSaveChanges') : t('dashAssignCreate')}
               </button>
             </div>
           </div>
@@ -669,79 +670,79 @@ export default function DashboardAssignPage() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowBulkModal(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900">تخصیص گروهی داشبورد</h3>
+              <h3 className="font-bold text-gray-900">{t('dashAssignBulkTitle')}</h3>
               <button onClick={() => setShowBulkModal(false)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-xs text-gray-500">تخصیص یک داشبورد به تمام اعضای یک واحد یا تیم به‌صورت خودکار</p>
+              <p className="text-xs text-gray-500">{t('dashAssignBulkDesc')}</p>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">داشبورد *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t('dashAssignDashboard')} *</label>
                 <select value={bulkForm.dashboard || ''} onChange={(e) => setBulkForm({ ...bulkForm, dashboard: Number(e.target.value) })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                  <option value="">انتخاب داشبورد...</option>
+                  <option value="">{t('dashAssignSelectDashboard')}...</option>
                   {dashboards.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">نوع هدف *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t('dashAssignTargetType')} *</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setBulkForm({ ...bulkForm, target_type: 'company', company_id: 0 })} className={`flex-1 p-3 rounded-xl border-2 text-sm font-medium transition ${bulkForm.target_type === 'company' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}>شرکت</button>
-                  <button onClick={() => setBulkForm({ ...bulkForm, target_type: 'division', division_id: 0, team_id: 0 })} className={`flex-1 p-3 rounded-xl border-2 text-sm font-medium transition ${bulkForm.target_type === 'division' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}>واحد</button>
-                  <button onClick={() => setBulkForm({ ...bulkForm, target_type: 'team', team_id: 0 })} className={`flex-1 p-3 rounded-xl border-2 text-sm font-medium transition ${bulkForm.target_type === 'team' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}>تیم</button>
+                  <button onClick={() => setBulkForm({ ...bulkForm, target_type: 'company', company_id: 0 })} className={`flex-1 p-3 rounded-xl border-2 text-sm font-medium transition ${bulkForm.target_type === 'company' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}>{t('dashAssignCompany')}</button>
+                  <button onClick={() => setBulkForm({ ...bulkForm, target_type: 'division', division_id: 0, team_id: 0 })} className={`flex-1 p-3 rounded-xl border-2 text-sm font-medium transition ${bulkForm.target_type === 'division' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}>{t('dashAssignDivision')}</button>
+                  <button onClick={() => setBulkForm({ ...bulkForm, target_type: 'team', team_id: 0 })} className={`flex-1 p-3 rounded-xl border-2 text-sm font-medium transition ${bulkForm.target_type === 'team' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}>{t('dashAssignTeam')}</button>
                 </div>
               </div>
               {bulkForm.target_type === 'company' && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">شرکت *</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">{t('dashAssignCompany')} *</label>
                   <select value={bulkForm.company_id || ''} onChange={(e) => setBulkForm({ ...bulkForm, company_id: Number(e.target.value) })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">انتخاب شرکت...</option>
+                    <option value="">{t('dashAssignSelectCompany')}...</option>
                     {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
               )}
               {bulkForm.target_type === 'team' && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">تیم *</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">{t('dashAssignTeam')} *</label>
                   <select value={bulkForm.team_id || ''} onChange={(e) => setBulkForm({ ...bulkForm, team_id: Number(e.target.value) })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">انتخاب تیم...</option>
+                    <option value="">{t('dashAssignSelectTeam')}...</option>
                     {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
               )}
               {bulkForm.target_type === 'division' && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">واحد *</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">{t('dashAssignDivision')} *</label>
                   <select value={bulkForm.division_id || ''} onChange={(e) => setBulkForm({ ...bulkForm, division_id: Number(e.target.value) })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">انتخاب واحد...</option>
+                    <option value="">{t('dashAssignSelectDivision')}...</option>
                     {divisions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">یادداشت</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t('dashAssignNotes')}</label>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-medium text-gray-700">فیلترهای ردیف داده</label>
-                  <button onClick={() => setBulkForm({ ...bulkForm, data_filters: [...bulkForm.data_filters, { col: '', op: 'eq', val: '' }] })} className="text-xs text-blue-600 hover:text-blue-700 font-medium">+ افزودن فیلتر</button>
+                  <label className="text-xs font-medium text-gray-700">{t('dashAssignRowFilters')}</label>
+                  <button onClick={() => setBulkForm({ ...bulkForm, data_filters: [...bulkForm.data_filters, { col: '', op: 'eq', val: '' }] })} className="text-xs text-blue-600 hover:text-blue-700 font-medium">+ {t('dashAssignAddFilter')}</button>
                 </div>
                 {bulkForm.data_filters.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {bulkForm.data_filters.map((f, idx) => (
                       <div key={idx} className="flex items-center gap-2">
-                        <input type="text" value={f.col} onChange={(e) => { const nf = [...bulkForm.data_filters]; nf[idx] = { ...nf[idx], col: e.target.value }; setBulkForm({ ...bulkForm, data_filters: nf }) }} placeholder="ستون" className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm outline-none" />
+                        <input type="text" value={f.col} onChange={(e) => { const nf = [...bulkForm.data_filters]; nf[idx] = { ...nf[idx], col: e.target.value }; setBulkForm({ ...bulkForm, data_filters: nf }) }} placeholder={t('dashAssignColumn')} className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm outline-none" />
                         <select value={f.op} onChange={(e) => { const nf = [...bulkForm.data_filters]; nf[idx] = { ...nf[idx], op: e.target.value }; setBulkForm({ ...bulkForm, data_filters: nf }) }} className="px-2 py-2 rounded-lg border border-gray-300 text-sm outline-none">
-                          {FILTER_OPERATORS.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
+                          {[{ value: 'eq', label: t('filterOpEq') }, { value: 'neq', label: t('filterOpNeq') }, { value: 'contains', label: t('filterOpContains') }, { value: 'gt', label: t('filterOpGt') }, { value: 'gte', label: t('filterOpGte') }, { value: 'lt', label: t('filterOpLt') }, { value: 'lte', label: t('filterOpLte') }, { value: 'starts_with', label: t('filterOpStartsWith') }, { value: 'ends_with', label: t('filterOpEndsWith') }, { value: 'in', label: t('filterOpIn') }].map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
                         </select>
-                        <input type="text" value={f.val} onChange={(e) => { const nf = [...bulkForm.data_filters]; nf[idx] = { ...nf[idx], val: e.target.value }; setBulkForm({ ...bulkForm, data_filters: nf }) }} placeholder="مقدار" className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm outline-none" />
+                        <input type="text" value={f.val} onChange={(e) => { const nf = [...bulkForm.data_filters]; nf[idx] = { ...nf[idx], val: e.target.value }; setBulkForm({ ...bulkForm, data_filters: nf }) }} placeholder={t('dashAssignValue')} className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm outline-none" />
                         <button onClick={() => setBulkForm({ ...bulkForm, data_filters: bulkForm.data_filters.filter((_, i) => i !== idx) })} className="p-2 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </div>
                 )}
-                <label className="block text-xs font-medium text-gray-700 mb-1">یادداشت</label>
-                <input type="text" value={bulkForm.notes} onChange={(e) => setBulkForm({ ...bulkForm, notes: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="اختیاری..." />
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t('dashAssignNotes')}</label>
+                <input type="text" value={bulkForm.notes} onChange={(e) => setBulkForm({ ...bulkForm, notes: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder={t('dashAssignOptional')} />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
-              <button onClick={() => setShowBulkModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition">انصراف</button>
+              <button onClick={() => setShowBulkModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition">{t('cancel')}</button>
               <button
                 onClick={async () => {                    if (!bulkForm.dashboard || (bulkForm.target_type === 'company' && !bulkForm.company_id) || (bulkForm.target_type === 'team' && !bulkForm.team_id) || (bulkForm.target_type === 'division' && !bulkForm.division_id)) {
                       toast(t('adminFormRequiredField'), 'error')
@@ -767,7 +768,7 @@ export default function DashboardAssignPage() {
                 }}
                 className="px-6 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition font-medium flex items-center gap-2"
               >
-                <Check className="w-4 h-4" /> اجرای تخصیص گروهی
+                <Check className="w-4 h-4" /> {t('dashAssignBulkExecute')}
               </button>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { useDashboardStore, controlFiltersToQuery, type DashboardFilterControl }
 import { X, Plus, Filter, ChevronDown, ChevronUp, Calendar, Search, CheckSquare, Sliders, Trash2, Shield, RotateCcw } from 'lucide-react'
 import api from '../api/client'
 import { useAuthStore } from '../store/authStore'
-import { useTranslation } from '../utils/i18n'
+import { useTranslation, type TranslationKey } from '../utils/i18n'
 
 interface Dataset {
   id: number
@@ -12,20 +12,24 @@ interface Dataset {
   column_types: Record<string, string>
 }
 
-const CONTROL_TYPES = [
-  { value: 'dropdown', label: 'لیست کشویی', icon: ChevronDown },
-  { value: 'date_range', label: 'محدوده تاریخ', icon: Calendar },
-  { value: 'text_search', label: 'جستجوی متن', icon: Search },
-  { value: 'checkbox', label: 'چک‌باکس', icon: CheckSquare },
-  { value: 'slider', label: 'اسلایدر', icon: Sliders },
-] as const
+function getControlTypes(t: (key: TranslationKey) => string) {
+  return [
+    { value: 'dropdown', label: t('filterBarDropdown'), icon: ChevronDown },
+    { value: 'date_range', label: t('filterBarDateRange'), icon: Calendar },
+    { value: 'text_search', label: t('filterBarTextSearch'), icon: Search },
+    { value: 'checkbox', label: t('filterBarCheckbox'), icon: CheckSquare },
+    { value: 'slider', label: t('filterBarSlider'), icon: Sliders },
+  ]
+}
 
-const FILTER_ROLE_OPTIONS = [
-  { value: 'ceo', label: 'مدیرعامل' },
-  { value: 'finance', label: 'مالی' },
-  { value: 'sales', label: 'فروش' },
-  { value: 'admin', label: 'مدیر سیستم' },
-]
+function getFilterRoles() {
+  return [
+    { value: 'ceo', label: 'CEO' },
+    { value: 'finance', label: 'Finance' },
+    { value: 'sales', label: 'Sales' },
+    { value: 'admin', label: 'Admin' },
+  ]
+}
 
 function generateId(): string {
   return `fc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -218,6 +222,9 @@ export default function DashboardFilterBar() {
     return c.allowedRoles.includes(userRole)
   })
 
+  const CONTROL_TYPES = getControlTypes(t)
+  const FILTER_ROLE_OPTIONS = getFilterRoles()
+
   const hasActiveFilters = activeControlFilters.length > 0 || filters.length > 0
 
   // Find widget title by id for filter origin tooltip
@@ -253,7 +260,7 @@ export default function DashboardFilterBar() {
               <button
                 onClick={() => handleControlValueChange(c.id, null)}
                 className="hover:text-indigo-900 dark:hover:text-indigo-100 ml-0.5"
-                title="حذف فیلتر"
+                title={t('filterBarDeleteFilter')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -265,14 +272,14 @@ export default function DashboardFilterBar() {
           <span
             key={idx}
             className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-xs border border-amber-200 dark:border-amber-700"
-            title={`فیلتر اعمال شده توسط: ${getWidgetTitle(f.sourceWidgetId)}`}
+            title={`${t('filterBarFilterAppliedBy')} ${getWidgetTitle(f.sourceWidgetId)}`}
           >
             <span className="font-medium">{f.col}:</span>
             <span>{String(f.val)}</span>
             <button
               onClick={() => removeFilter(f.col)}
               className="hover:text-amber-900 dark:hover:text-amber-100 ml-0.5"
-              title="حذف فیلتر"
+              title={t('filterBarDeleteFilter')}
             >
               <X className="w-3 h-3" />
             </button>
@@ -298,7 +305,7 @@ export default function DashboardFilterBar() {
         <button
           onClick={() => setExpanded(!expanded)}
           className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition flex-shrink-0"
-          title={expanded ? 'بستن تنظیمات فیلتر' : 'باز کردن تنظیمات فیلتر'}
+          title={expanded ? t('filterBarCancel') : t('filterBarAddFilter')}
         >
           {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
@@ -316,28 +323,28 @@ export default function DashboardFilterBar() {
                   />
                   {/* Filter access indicator */}
                   {control.allowedRoles && control.allowedRoles.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center z-10" title={`فقط برای: ${control.allowedRoles.join(', ')}`}>
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center z-10"                    title={`${t('filterBarOnlyFor')} ${control.allowedRoles.join(', ')}`}>
                       <Shield className="w-2 h-2" />
                     </span>
                   )}
                   <button
                     onClick={() => setEditingFilterRoles(editingFilterRoles === control.id ? null : control.id)}
                     className="absolute -top-1.5 left-6 w-4 h-4 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-full flex items-center justify-center text-[8px] transition z-10"
-                    title="دسترسی فیلتر"
+                    title={t('filterBarAccess')}
                   >
                     <Shield className="w-2 h-2" />
                   </button>
                   <button
                     onClick={() => removeFilterControl(control.id)}
                     className="absolute -top-1 -left-1 w-4 h-4 bg-gray-200 hover:bg-red-400 hover:text-white rounded-full flex items-center justify-center text-[8px] text-gray-500 transition z-10"
-                    title="حذف فیلتر"
+                    title={t('filterBarDeleteFilter')}
                   >
                     <Trash2 className="w-2 h-2" />
                   </button>
                   {/* Inline role picker for filter */}
                   {editingFilterRoles === control.id && (
                     <div ref={editingFilterRef} className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
-                      <div className="text-[10px] font-medium text-gray-600 dark:text-gray-300 mb-1">دسترسی فیلتر:</div>
+                      <div className="text-[10px] font-medium text-gray-600 dark:text-gray-300 mb-1">{t('filterBarAccess')}:</div>
                       {FILTER_ROLE_OPTIONS.map((r) => (
                         <label key={r.value} className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
                           <input
@@ -360,7 +367,7 @@ export default function DashboardFilterBar() {
                           <span className="text-[10px] text-gray-600 dark:text-gray-400">{r.label}</span>
                         </label>
                       ))}
-                      <p className="text-[9px] text-gray-400 mt-1">بدون انتخاب = همه</p>
+                      <p className="text-[9px] text-gray-400 mt-1">{t('filterBarNoneAll')}</p>
                     </div>
                   )}
                 </div>
@@ -373,11 +380,11 @@ export default function DashboardFilterBar() {
                 className="flex items-center gap-1.5 px-3 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition"
               >
                 <Plus className="w-4 h-4" />
-                افزودن فیلتر
+                {t('filterBarAddFilter')}
               </button>
             ) : (
               <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl p-3 space-y-2 min-w-[280px]">
-                <div className="text-xs font-medium text-gray-700 dark:text-gray-300">فیلتر جدید</div>
+                <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{t('filterBarNewFilter')}</div>
 
                 {/* Dataset selector */}
                 <select
@@ -385,7 +392,7 @@ export default function DashboardFilterBar() {
                   onChange={(e) => setNewControlDatasetId(e.target.value ? parseInt(e.target.value) : null)}
                   className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
                 >
-                  <option value="">مجموعه داده...</option>
+                  <option value="">{t('filterBarDataset')}</option>
                   {datasets.filter((d) => datasetIds.includes(d.id)).map((ds) => (
                     <option key={ds.id} value={ds.id}>{ds.name}</option>
                   ))}
@@ -398,7 +405,7 @@ export default function DashboardFilterBar() {
                     onChange={(e) => setNewControlCol(e.target.value)}
                     className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
                   >
-                    <option value="">ستون...</option>
+                    <option value="">{t('filterBarColumn')}</option>
                     {dsForNewControl.column_names.map((col) => (
                       <option key={col} value={col}>{col}</option>
                     ))}
@@ -421,7 +428,7 @@ export default function DashboardFilterBar() {
                   type="text"
                   value={newControlLabel}
                   onChange={(e) => setNewControlLabel(e.target.value)}
-                  placeholder="برچسب (اختیاری)"
+                  placeholder={t('filterBarLabelOptional')}
                   className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
 
@@ -429,7 +436,7 @@ export default function DashboardFilterBar() {
                 <div>
                   <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                     <Shield className="w-2.5 h-2.5" />
-                    دسترسی فیلتر (اختیاری)
+                    {t('filterBarAccessOptional')}
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {FILTER_ROLE_OPTIONS.map((r) => (
@@ -447,7 +454,7 @@ export default function DashboardFilterBar() {
                       </button>
                     ))}
                   </div>
-                  <p className="text-[9px] text-gray-400 mt-0.5">بدون انتخاب = همه</p>
+                  <p className="text-[9px] text-gray-400 mt-0.5">{t('filterBarNoneAll')}</p>
                 </div>
 
                 <div className="flex gap-2">
@@ -456,13 +463,13 @@ export default function DashboardFilterBar() {
                     disabled={!newControlCol || !newControlDatasetId}
                     className="flex-1 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
                   >
-                    افزودن
+                    {t('filterBarAdd')}
                   </button>
                   <button
                     onClick={() => setAddingControl(false)}
                     className="px-3 py-1.5 text-gray-500 dark:text-gray-400 text-xs rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                   >
-                    انصراف
+                    {t('filterBarCancel')}
                   </button>
                 </div>
               </div>
@@ -492,7 +499,7 @@ function FilterControlWidget({
             onChange={(e) => onChange(e.target.value || null)}
             className="w-full px-2 py-1.5 pr-6 rounded-lg border border-gray-300 dark:border-gray-600 text-xs bg-white dark:bg-gray-800 dark:text-gray-200 focus:ring-1 focus:ring-indigo-500 outline-none appearance-none"
           >
-            <option value="">همه</option>
+            <option value="">All</option>
             {(control.options || []).map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
             ))}
@@ -555,7 +562,7 @@ function FilterControlWidget({
             type="text"
             value={String(control.value || '')}
             onChange={(e) => onChange(e.target.value || null)}
-            placeholder="جستجو..."
+            placeholder="Search..."
             className="w-full pr-7 pl-6 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
           />
           {control.value && (

@@ -7,6 +7,7 @@ import { formatKpiValue, DEFAULT_KPI_FORMAT, type KpiFormat } from '../utils/kpi
 import { PRESET_PALETTES } from '../utils/palettes'
 import { DEFAULT_WIDGET_STYLE, type WidgetStyle } from '../utils/themeConfig'
 import type { FontConfig } from '../utils/chartDefaults'
+import { useTranslation } from '../utils/i18n'
 
 interface WidgetFilter {
   col: string
@@ -28,25 +29,25 @@ interface WidgetConfigPanelProps {
 }
 
 const chartTypes = [
-  { value: 'bar', label: 'میله‌ای', icon: BarChart3 },
-  { value: 'bar_horizontal', label: 'میله‌ای افقی', icon: BarChart3 },
-  { value: 'stacked_bar', label: 'میله‌ای انباشته', icon: BarChart3 },
-  { value: 'line', label: 'خطی', icon: TrendingUp },
-  { value: 'area', label: 'سطحی', icon: TrendingUp },
-  { value: 'pie', label: 'دایره‌ای', icon: PieChart },
-  { value: 'donut', label: 'دونات', icon: Circle },
-  { value: 'scatter', label: 'پراکنده', icon: Target },
-  { value: 'gauge', label: 'گیج', icon: GitBranch },
-  { value: 'heatmap', label: 'نقشه حرارتی', icon: Grid3x3 },
-  { value: 'treemap', label: 'درختی', icon: TreePine },
-  { value: 'sankey', label: 'جریان', icon: ArrowRightLeft },
-  { value: 'funnel', label: 'قیفی', icon: Filter },
-  { value: 'radar', label: 'راداری', icon: Radar },
-  { value: 'graph', label: 'شبکه‌ای', icon: Network },
-  { value: 'map', label: 'نقشه', icon: Map },
-  { value: 'table', label: 'جدول', icon: Table },
-  { value: 'kpi', label: 'شاخص کلیدی', icon: Hash },
-  { value: 'leader_kpi', label: 'برترین', icon: TrendingUp },
+  { value: 'bar', label: 'Bar', icon: BarChart3 },
+  { value: 'bar_horizontal', label: 'Horizontal Bar', icon: BarChart3 },
+  { value: 'stacked_bar', label: 'Stacked Bar', icon: BarChart3 },
+  { value: 'line', label: 'Line', icon: TrendingUp },
+  { value: 'area', label: 'Area', icon: TrendingUp },
+  { value: 'pie', label: 'Pie', icon: PieChart },
+  { value: 'donut', label: 'Donut', icon: Circle },
+  { value: 'scatter', label: 'Scatter', icon: Target },
+  { value: 'gauge', label: 'Gauge', icon: GitBranch },
+  { value: 'heatmap', label: 'Heatmap', icon: Grid3x3 },
+  { value: 'treemap', label: 'Treemap', icon: TreePine },
+  { value: 'sankey', label: 'Sankey', icon: ArrowRightLeft },
+  { value: 'funnel', label: 'Funnel', icon: Filter },
+  { value: 'radar', label: 'Radar', icon: Radar },
+  { value: 'graph', label: 'Graph', icon: Network },
+  { value: 'map', label: 'Map', icon: Map },
+  { value: 'table', label: 'Table', icon: Table },
+  { value: 'kpi', label: 'KPI', icon: Hash },
+  { value: 'leader_kpi', label: 'Leader KPI', icon: TrendingUp },
 ]
 
 const AGG_OPTIONS = ['SUM', 'COUNT', 'COUNT_DISTINCT', 'AVG', 'MIN', 'MAX'] as const
@@ -68,6 +69,7 @@ interface Dataset {
 
 export default function WidgetConfigPanel({ widgetId, onClose }: WidgetConfigPanelProps) {
   const { id: dashboardId } = useParams<{ id: string }>()
+  const { t } = useTranslation()
   const { widgets, pages, activePageId, updateWidget } = useDashboardStore()
   // Look up widget from active page first, then fall back to global widgets array
   const activePage = pages.find((p) => p.id === activePageId)
@@ -355,7 +357,7 @@ export default function WidgetConfigPanel({ widgetId, onClose }: WidgetConfigPan
       {/* Panel */}
       <div className="absolute left-0 top-0 bottom-0 w-full max-w-96 bg-white dark:bg-gray-900 shadow-xl overflow-y-auto">
         <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-          <h3 className="font-bold text-gray-900 dark:text-gray-100">تنظیمات نمودار</h3>
+          <h3 className="font-bold text-gray-900 dark:text-gray-100">{t('widgetChartSettings')}</h3>
           <button onClick={onClose} className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition">
             <X className="w-5 h-5" />
           </button>
@@ -364,7 +366,7 @@ export default function WidgetConfigPanel({ widgetId, onClose }: WidgetConfigPan
         <div className="p-6 space-y-6">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">عنوان</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('widgetTitle')}</label>
             <input
               type="text"
               value={title}
@@ -376,7 +378,7 @@ export default function WidgetConfigPanel({ widgetId, onClose }: WidgetConfigPan
 
           {/* Chart Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نوع نمودار</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('widgetChartType')}</label>
             <div className="grid grid-cols-2 gap-2">
               {chartTypes.map((ct) => {
                 const Icon = ct.icon
@@ -400,16 +402,16 @@ export default function WidgetConfigPanel({ widgetId, onClose }: WidgetConfigPan
 
           {/* Dataset */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">مجموعه داده</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('widgetDataset')}</label>
             <select
               value={selectedDatasetId || ''}
               onChange={(e) => setSelectedDatasetId(e.target.value ? parseInt(e.target.value) : null)}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
             >
-              <option value="">انتخاب کنید...</option>
+              <option value="">{t('widgetSelectDataset')}</option>
               {datasets.map((ds) => (
                 <option key={ds.id} value={ds.id}>
-                  {ds.name} ({ds.column_names.length} ستون)
+                  {ds.name} ({ds.column_names.length} {t('dbColumns')})
                 </option>
               ))}
             </select>
@@ -418,14 +420,14 @@ export default function WidgetConfigPanel({ widgetId, onClose }: WidgetConfigPan
           {/* Column Layout Hints for special chart types */}
           {selectedDataset && selectedDataset.column_names.length > 0 && ['heatmap', 'sankey', 'graph'].includes(chartType) && (
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-              {chartType === 'heatmap' && '🗺️ نقشه حرارتی: ستون اول = محور X، ستون دوم = محور Y، ستون سوم = مقدار'}
-              {chartType === 'sankey' && '🔄 جریان: ستون اول = مبدأ، ستون دوم = مقصد، ستون سوم = مقدار (اختیاری)'}
-              {chartType === 'graph' && '🕸️ شبکه‌ای: ستون اول = مبدأ، ستون دوم = مقصد، ستون سوم = وزن (اختیاری)'}
+              {chartType === 'heatmap' && t('widgetHeatmapHint')}
+              {chartType === 'sankey' && t('widgetSankeyHint')}
+              {chartType === 'graph' && t('widgetGraphHint')}
             </div>
           )}
           {selectedDataset && selectedDataset.column_names.length > 0 && chartType === 'leader_kpi' && (
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-              🏆 برترین: ستون اول = دسته‌بندی (مثل نام فروشنده)، سیستم به صورت خودکار تعداد را شمرده و برترین را نمایش می‌دهد
+              {t('widgetLeaderKpiHint')}
             </div>
           )}
 
@@ -433,10 +435,10 @@ export default function WidgetConfigPanel({ widgetId, onClose }: WidgetConfigPan
           {selectedDataset && selectedDataset.column_names.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ستون\u200cها
+                {t('dashAssignColumn')}
                 {chartType !== 'table' && (
                   <span className="text-xs text-gray-400 mr-2">
-                    (روی برچسب کلیک کنید تا بین دسته/مقدار تغییر کند)
+                    ({t('widgetColumnsHint')})
                   </span>
                 )}
               </label>
