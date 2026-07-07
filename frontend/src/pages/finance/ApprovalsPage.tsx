@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { financeApi } from '../../api/finance'
-import { CheckCircle, XCircle, Clock } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, FileText, Download } from 'lucide-react'
 import { useTranslation } from '../../utils/i18n'
 
 interface Approval { id: number; payer_name: string; letter_number: string; status: string; requester_name: string; approved_by_name: string; created_at: string; rejection_reason: string }
@@ -20,6 +20,21 @@ export default function ApprovalsPage() {
     return map[s] || map.pending
   }
 
+  const handleGenerate = async (id: number, fmt: string) => {
+    setGeneratingId(id)
+    try {
+      const res = await financeApi.downloadInvoiceFile(id, fmt)
+      const blob = new Blob([res.data])
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fmt === 'excel' ? `approval_${id}.xlsx` : `approval_${id}.docx`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch { /* ignore */ }
+    setGeneratingId(null)
+  }
+
   const load = () => {
     setLoading(true)
     const params: Record<string, string> = {}
@@ -27,6 +42,8 @@ export default function ApprovalsPage() {
     financeApi.approvals(params).then(r => { setApprovals(r.data); setLoading(false) }).catch(() => setLoading(false))
   }
   useEffect(load, [filter])
+
+  const [generatingId, setGeneratingId] = useState<number | null>(null)
 
   const handleAction = async (id: number, action: string) => {
     if (action === 'reject') {
@@ -62,12 +79,24 @@ export default function ApprovalsPage() {
                 </div>
                 <div className="text-sm mt-1">{a.payer_name} • {t('approvalsRequester')} {a.requester_name}</div>
               </div>
-              {a.status === 'pending' && (
-                <div className="flex gap-2">
-                  <button onClick={() => handleAction(a.id, 'approve')} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs hover:bg-emerald-700"><CheckCircle className="w-3 h-3" /> {t('approvalsApprove')}</button>
-                  <button onClick={() => handleAction(a.id, 'reject')} className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700"><XCircle className="w-3 h-3" /> {t('approvalsReject')}</button>
-                </div>
-              )}
+              <div className="flex gap-2 items-center">
+                {a.status === 'pending' && (
+                  <>
+                    <button onClick={() => handleAction(a.id, 'approve')} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs hover:bg-emerald-700"><CheckCircle className="w-3 h-3" /> {t('approvalsApprove')}</button>
+                    <button onClick={() => handleAction(a.id, 'reject')} className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700"><XCircle className="w-3 h-3" /> {t('approvalsReject')}</button>
+                  </>
+                )}
+                {(a.status === 'approved' || a.status === 'pending') && (
+                  <>
+                    <button onClick={() => handleGenerate(a.id, 'excel')} disabled={generatingId === a.id} className="p-1.5 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20" title="Excel">
+                      <FileText className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleGenerate(a.id, 'word')} disabled={generatingId === a.id} className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="Word">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           )
         })
