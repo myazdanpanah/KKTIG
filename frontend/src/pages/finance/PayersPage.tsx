@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { financeApi } from '../../api/finance'
-import { Plus, Search, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
 import { useTranslation } from '../../utils/i18n'
 import { formatCurrency } from '../../utils/format'
 
@@ -14,6 +14,8 @@ export default function PayersPage() {
   const [showForm, setShowForm] = useState(false)
   const [editPayer, setEditPayer] = useState<Payer | null>(null)
   const [form, setForm] = useState({ code: '', name: '', customer_type: 'legal', national_id: '', phone: '', mobile: '', email: '', address: '' })
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [balanceDetail, setBalanceDetail] = useState<Record<string, unknown> | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -36,6 +38,15 @@ export default function PayersPage() {
     await financeApi.deletePayer(id); load()
   }
 
+  const toggleExpand = async (id: number) => {
+    if (expandedId === id) { setExpandedId(null); setBalanceDetail(null); return }
+    setExpandedId(id)
+    try {
+      const res = await financeApi.payerBalance(id)
+      setBalanceDetail(res.data)
+    } catch { /* ignore */ }
+  }
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -55,13 +66,23 @@ export default function PayersPage() {
             <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payersName')}</th>
             <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payersType')}</th>
             <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payersBalance')}</th>
+            <th className="w-8"></th>
+            <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payersCode')}</th>
+            <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payersName')}</th>
+            <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payersType')}</th>
+            <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payersBalance')}</th>
             <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payersActions')}</th>
           </tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={5} className="text-center py-8 text-gray-400">{t('loading')}</td></tr>
-            : payers.length === 0 ? <tr><td colSpan={5} className="text-center py-8 text-gray-400">{t('payNoData')}</td></tr>
+            {loading ? <tr><td colSpan={6} className="text-center py-8 text-gray-400">{t('loading')}</td></tr>
+            : payers.length === 0 ? <tr><td colSpan={6} className="text-center py-8 text-gray-400">{t('payNoData')}</td></tr>
             : payers.map(p => (
               <tr key={p.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+                <td className="px-2 py-3">
+                  <button onClick={() => toggleExpand(p.id)} className="p-1 text-gray-400 hover:text-gray-600">
+                    {expandedId === p.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                </td>
                 <td className="px-4 py-3 font-mono text-xs">{p.code}</td>
                 <td className="px-4 py-3 font-medium">{p.name}</td>
                 <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${p.customer_type === 'legal' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>{p.customer_type === 'legal' ? t('payersLegal') : t('payersNatural')}</span></td>
@@ -74,6 +95,34 @@ export default function PayersPage() {
                 </td>
               </tr>
             ))}
+            {expandedId && balanceDetail && (
+              <tr key="balance-detail">
+                <td colSpan={6} className="bg-gray-50 dark:bg-gray-850 p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
+                      <div className="text-xs text-gray-500">{t('payersInvoicesTotal')}</div>
+                      <div className="font-bold text-blue-700 dark:text-blue-400">{formatCurrency((balanceDetail.invoices_total as number) || 0)}</div>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
+                      <div className="text-xs text-gray-500">{t('payersPaymentsTotal')}</div>
+                      <div className="font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency((balanceDetail.payments_total as number) || 0)}</div>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
+                      <div className="text-xs text-gray-500">{t('payersDebtsTotal')}</div>
+                      <div className="font-bold text-red-700 dark:text-red-400">{formatCurrency((balanceDetail.manual_debts_total as number) || 0)}</div>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center">
+                      <div className="text-xs text-gray-500">{t('payersCreditsTotal')}</div>
+                      <div className="font-bold text-amber-700 dark:text-amber-400">{formatCurrency((balanceDetail.credits_total as number) || 0)}</div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-center">
+                      <div className="text-xs text-gray-500">{t('payersBalance')}</div>
+                      <div className={`font-bold ${((balanceDetail.balance as number) || 0) > 0 ? 'text-red-700' : 'text-emerald-700'}`}>{formatCurrency((balanceDetail.balance as number) || 0)}</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

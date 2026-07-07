@@ -17,7 +17,7 @@ import FileImportPage from './pages/FileImportPage'
 import ExternalDbPage from './pages/ExternalDbPage'
 import SheetsSyncPage from './pages/SheetsSyncPage'
 import SettingsPage from './pages/SettingsPage'
-import { FinanceShell, FinanceDashboard, PayersPage, InvoicesPage, PaymentsPage, DebtsCreditsPage, ApprovalsPage, ItemTypesPage, FinanceSettingsPage } from './pages/finance'
+import { FinanceShell, FinanceDashboard, PayersPage, InvoicesPage, PaymentsPage, DebtsCreditsPage, ApprovalsPage, ItemTypesPage, FinanceSettingsPage, TemplateEditorPage } from './pages/finance'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -53,7 +53,7 @@ export default function App() {
         <Route path="debts" element={<DebtsCreditsPage />} />
         <Route path="approvals" element={<ApprovalsPage />} />
         <Route path="item-types" element={<ItemTypesPage />} />
-        <Route path="templates" element={<ItemTypesPage />} />
+        <Route path="templates" element={<TemplateEditorPage />} />
         <Route path="settings" element={<FinanceSettingsPage />} />
       </Route>
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
