@@ -16,12 +16,13 @@ export default function PayersPage() {
   const [form, setForm] = useState({ code: '', name: '', customer_type: 'legal', national_id: '', phone: '', mobile: '', email: '', address: '' })
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [balanceDetail, setBalanceDetail] = useState<Record<string, unknown> | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
     const params: Record<string, string> = {}
     if (search) params.search = search
-    financeApi.payers(params).then(r => { setPayers(r.data); setLoading(false) }).catch(() => setLoading(false))
+    financeApi.payers(params).then(r => { setPayers(r.data); setLoading(false) }).catch(() => { setLoading(false); setError('خطا در بارگذاری لیست پرداخت‌کنندگان.'); setTimeout(() => setError(null), 5000) })
   }
   useEffect(load, [search])
 
@@ -35,7 +36,12 @@ export default function PayersPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm(t('payersDeleteConfirm'))) return
-    await financeApi.deletePayer(id); load()
+    try {
+      await financeApi.deletePayer(id); load()
+    } catch {
+      setError('خطا در حذف پرداخت‌کننده.')
+      setTimeout(() => setError(null), 5000)
+    }
   }
 
   const toggleExpand = async (id: number) => {
@@ -44,7 +50,10 @@ export default function PayersPage() {
     try {
       const res = await financeApi.payerBalance(id)
       setBalanceDetail(res.data)
-    } catch { /* ignore */ }
+    } catch {
+      setError('خطا در دریافت جزئیات مانده پرداخت‌کننده.')
+      setTimeout(() => setError(null), 5000)
+    }
   }
 
   return (
@@ -126,6 +135,13 @@ export default function PayersPage() {
           </tbody>
         </table>
       </div>
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="ml-2 text-red-500 hover:text-red-700">✕</button>
+        </div>
+      )}
+
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg mx-4 space-y-4">
