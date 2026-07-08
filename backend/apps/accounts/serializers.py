@@ -36,7 +36,23 @@ class CompanySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Company
-        fields = ["id", "name", "description", "is_active", "division_count", "employee_count", "created_at"]
+        fields = [
+            "id", "name", "description", "logo", "is_active",
+            # Legal identity
+            "national_id", "economic_code", "registration_number",
+            # Contact
+            "address", "postal_code", "phone",
+            # Banking – primary
+            "bank_name1", "account_number1", "shaba_number1",
+            # Banking – secondary
+            "bank_name2", "account_number2", "shaba_number2",
+            # Signatory
+            "manager_name", "manager_position",
+            # File paths
+            "signature_path", "stamp_path", "approved_output_path",
+            # Computed
+            "division_count", "employee_count", "created_at",
+        ]
         read_only_fields = ["id", "created_at"]
 
     def get_division_count(self, obj):

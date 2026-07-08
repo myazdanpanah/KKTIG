@@ -17,6 +17,14 @@ const emptyForm = {
   email: '', parent: '' as string,
 }
 
+const BALANCE_COLOR_MAP = {
+  blue: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400' },
+  emerald: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-400' },
+  red: { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400' },
+  amber: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-400' },
+  purple: { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-400' },
+} as const
+
 export default function PayersPage() {
   const { t } = useTranslation()
   const [payers, setPayers] = useState<Payer[]>([])
@@ -119,16 +127,16 @@ export default function PayersPage() {
             {expandedId && balanceDetail && (
               <tr><td colSpan={6} className="bg-gray-50 dark:bg-gray-800 p-4">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {[
-                    { label: t('payersInvoicesTotal'), value: (balanceDetail.invoices_total as number) || 0, color: 'blue' },
-                    { label: t('payersPaymentsTotal'), value: (balanceDetail.payments_total as number) || 0, color: 'emerald' },
-                    { label: t('payersDebtsTotal'), value: (balanceDetail.manual_debts_total as number) || 0, color: 'red' },
-                    { label: t('payersCreditsTotal'), value: (balanceDetail.credits_total as number) || 0, color: 'amber' },
-                    { label: t('payersBalance'), value: (balanceDetail.balance as number) || 0, color: ((balanceDetail.balance as number) || 0) > 0 ? 'red' : 'emerald' },
-                  ].map((item, i) => (
-                    <div key={i} className={`bg-${item.color}-50 dark:bg-${item.color}-900/20 rounded-lg p-3 text-center`}>
+                  {([
+                    { label: t('payersInvoicesTotal'), value: (balanceDetail.invoices_total as number) || 0, color: 'blue' as const },
+                    { label: t('payersPaymentsTotal'), value: (balanceDetail.payments_total as number) || 0, color: 'emerald' as const },
+                    { label: t('payersDebtsTotal'), value: (balanceDetail.manual_debts_total as number) || 0, color: 'red' as const },
+                    { label: t('payersCreditsTotal'), value: (balanceDetail.credits_total as number) || 0, color: 'amber' as const },
+                    { label: t('payersBalance'), value: (balanceDetail.balance as number) || 0, color: ((balanceDetail.balance as number) || 0) > 0 ? 'red' as const : 'emerald' as const },
+                  ] as const).map((item, i) => (
+                    <div key={i} className={`${BALANCE_COLOR_MAP[item.color].bg} rounded-lg p-3 text-center`}>
                       <div className="text-xs text-gray-500">{item.label}</div>
-                      <div className={`font-bold text-${item.color}-700 dark:text-${item.color}-400`}>{formatCurrency(item.value)}</div>
+                      <div className={`font-bold ${BALANCE_COLOR_MAP[item.color].text}`}>{formatCurrency(item.value)}</div>
                     </div>
                   ))}
                 </div>
