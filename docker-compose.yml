@@ -29,15 +29,13 @@ services:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
     volumes:
       - ./superset_config.py:/app/pythonpath/superset_config.py
+      - ./superset-start.sh:/app/superset-start.sh
       - superset_data:/app/superset_home
     ports:
       - "8088:8088"
     depends_on:
       - postgres
-    command: >
-      sh -c "superset db upgrade &&
-             superset init &&
-             gunicorn --bind 0.0.0.0:8088 --workers 4 --timeout 120 superset.app:create_app()"
+    command: ["bash", "/app/superset-start.sh"]
     restart: unless-stopped
 
   backend:
