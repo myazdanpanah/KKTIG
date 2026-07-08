@@ -7,6 +7,29 @@ class Company(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, default="")
     logo = models.ImageField(upload_to="companies/", blank=True, null=True)
+    # Legal / financial identity
+    national_id = models.CharField(max_length=20, blank=True, default="")
+    economic_code = models.CharField(max_length=20, blank=True, default="")
+    registration_number = models.CharField(max_length=20, blank=True, default="")
+    # Contact
+    address = models.TextField(blank=True, default="")
+    postal_code = models.CharField(max_length=20, blank=True, default="")
+    phone = models.CharField(max_length=20, blank=True, default="")
+    # Banking – primary account
+    bank_name1 = models.CharField(max_length=100, blank=True, default="")
+    account_number1 = models.CharField(max_length=50, blank=True, default="")
+    shaba_number1 = models.CharField(max_length=50, blank=True, default="")
+    # Banking – secondary account
+    bank_name2 = models.CharField(max_length=100, blank=True, default="")
+    account_number2 = models.CharField(max_length=50, blank=True, default="")
+    shaba_number2 = models.CharField(max_length=50, blank=True, default="")
+    # Signatory
+    manager_name = models.CharField(max_length=100, blank=True, default="")
+    manager_position = models.CharField(max_length=100, blank=True, default="")
+    # File paths
+    signature_path = models.CharField(max_length=500, blank=True, default="")
+    stamp_path = models.CharField(max_length=500, blank=True, default="")
+    approved_output_path = models.CharField(max_length=500, blank=True, default="")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
