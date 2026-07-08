@@ -3,6 +3,7 @@ import { financeApi } from '../../api/finance'
 import { Plus, Upload, Download, FileText, ChevronDown, ChevronRight, File } from 'lucide-react'
 import { useTranslation } from '../../utils/i18n'
 import { formatCurrency } from '../../utils/format'
+import JalaliDateInput from '../../components/JalaliDateInput'
 
 interface Invoice { id: number; letter_number: string; payer_name: string; invoice_type_name: string; issue_date: string; status: string; amount: number; line_count: number }
 interface Payer { id: number; name: string; code: string }
@@ -237,7 +238,7 @@ export default function InvoicesPage() {
                 <option value="">{t('invSelectType')}</option>
                 {itemTypes.map(ty => <option key={ty.id} value={ty.id}>{ty.name}</option>)}
               </select>
-              <input type="date" value={form.issue_date} onChange={e => setForm({...form, issue_date: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
+              <JalaliDateInput value={form.issue_date} onChange={v => setForm({...form, issue_date: v})} className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
               <input placeholder={t('invPeriod')} value={form.period_range} onChange={e => setForm({...form, period_range: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
             </div>
             <div className="flex justify-end gap-2">

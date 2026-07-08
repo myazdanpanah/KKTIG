@@ -36,7 +36,9 @@ urlpatterns = [
     path('payments/<int:pk>/', views.payment_delete, name='payment-delete'),
     # Manual Debts & Credits
     path('debts/', views.manualdebt_list_create, name='debt-list-create'),
+    path('debts/<int:pk>/', views.manualdebt_detail, name='debt-detail'),
     path('credits/', views.credit_list_create, name='credit-list-create'),
+    path('credits/<int:pk>/', views.credit_detail, name='credit-detail'),
     # Approvals
     path('approvals/', views.approval_list_create, name='approval-list-create'),
     path('approvals/<int:pk>/<str:action>/', views.approval_action, name='approval-action'),

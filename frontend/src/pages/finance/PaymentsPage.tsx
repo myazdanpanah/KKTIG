@@ -3,6 +3,8 @@ import { financeApi } from '../../api/finance'
 import { Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from '../../utils/i18n'
 import { formatCurrency } from '../../utils/format'
+import JalaliDateInput from '../../components/JalaliDateInput'
+import { formatDate } from '../../utils/formatDate'
 
 interface Payment { id: number; payer_name: string; payment_code: string; payment_date: string; amount: number; tracking_number: string; description: string }
 interface Payer { id: number; name: string; code: string }
@@ -55,7 +57,7 @@ export default function PaymentsPage() {
               <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
                 <td className="px-4 py-3 font-mono text-xs">{p.payment_code}</td>
                 <td className="px-4 py-3">{p.payer_name}</td>
-                <td className="px-4 py-3 text-xs">{p.payment_date}</td>
+                <td className="px-4 py-3 text-xs">{formatDate(p.payment_date)}</td>
                 <td className="px-4 py-3 font-bold text-emerald-600">{formatCurrency(p.amount)}</td>
                 <td className="px-4 py-3"><button onClick={() => handleDelete(p.id)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button></td>
               </tr>
@@ -72,7 +74,7 @@ export default function PaymentsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <input placeholder={t('payCodePlaceholder')} value={form.payment_code} onChange={e => setForm({...form, payment_code: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
                 <input type="number" placeholder={t('payAmountPlaceholder')} value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
-                <input type="date" value={form.payment_date} onChange={e => setForm({...form, payment_date: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
+                <JalaliDateInput value={form.payment_date} onChange={v => setForm({...form, payment_date: v})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
                 <input placeholder={t('payTracking')} value={form.tracking_number} onChange={e => setForm({...form, tracking_number: e.target.value})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
               </div>
               <textarea placeholder={t('dcDescriptionPlaceholder')} value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" rows={2} />

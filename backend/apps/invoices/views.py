@@ -299,6 +299,24 @@ def manualdebt_list_create(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+@api_view(['PUT', 'DELETE'])
+@finance_permission('can_issue')
+def manualdebt_detail(request, pk):
+    company = _company(request.user)
+    try:
+        debt = ManualDebt.objects.get(pk=pk, company=company)
+    except ManualDebt.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if request.method == 'PUT':
+        serializer = ManualDebtSerializer(debt, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        debt.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 @api_view(['GET', 'POST'])
 @finance_permission('can_issue')
 def credit_list_create(request):
@@ -316,6 +334,18 @@ def credit_list_create(request):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['DELETE'])
+@finance_permission('can_issue')
+def credit_detail(request, pk):
+    company = _company(request.user)
+    try:
+        credit = Credit.objects.get(pk=pk, company=company)
+    except Credit.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    credit.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET', 'POST'])

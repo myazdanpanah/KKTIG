@@ -140,9 +140,14 @@ class Payment(models.Model):
 
 
 class ManualDebt(models.Model):
+    SERVICE_TYPES = [
+        ("ویزا", "ویزا"), ("اتوبوس", "اتوبوس"), ("قطار", "قطار"),
+        ("گشت", "گشت"), ("تور", "تور"), ("CIP", "CIP"), ("سایر", "سایر"),
+    ]
     company = models.ForeignKey("accounts.Company", on_delete=models.CASCADE, related_name="manual_debts")
     payer = models.ForeignKey(Payer, on_delete=models.PROTECT, related_name="manual_debts")
     description = models.CharField(max_length=500)
+    service_type = models.CharField(max_length=50, choices=SERVICE_TYPES, blank=True, default="")
     amount = models.BigIntegerField()
     date = models.DateField()
     notes = models.TextField(blank=True, default="")

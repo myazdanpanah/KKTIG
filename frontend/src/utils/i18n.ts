@@ -146,6 +146,10 @@ const translations = {
     dcAmountPlaceholder: 'مبلغ (ریال)',
     dcDescriptionPlaceholder: 'توضیحات',
     dcInvoicePlaceholder: 'شماره صورتحساب',
+    dcServiceType: 'نوع خدمت',
+    dcTotalRows: 'تعداد ردیف',
+    dcTotalAmount: 'جمع کل',
+    dcActions: 'عملیات',
     // InvoicesPage
     invoicesTitle: 'صورت\u200cحساب\u200cها',
     newInvoice: 'ثبت صورتحساب',
@@ -1039,6 +1043,10 @@ const translations = {
     dcAmountPlaceholder: 'Amount (IRR)',
     dcDescriptionPlaceholder: 'Description',
     dcInvoicePlaceholder: 'Invoice Number',
+    dcServiceType: 'Service Type',
+    dcTotalRows: 'Total Rows',
+    dcTotalAmount: 'Total Amount',
+    dcActions: 'Actions',
     // InvoicesPage
     invoicesTitle: 'Invoices',
     newInvoice: 'New Invoice',

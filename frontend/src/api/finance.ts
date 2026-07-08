@@ -43,8 +43,11 @@ export const financeApi = {
   // Debts & Credits
   debts: (params?: Record<string, string>) => api.get('/invoices/debts/', { params }),
   createDebt: (data: Record<string, unknown>) => api.post('/invoices/debts/', data),
+  updateDebt: (id: number, data: Record<string, unknown>) => api.put(`/invoices/debts/${id}/`, data),
+  deleteDebt: (id: number) => api.delete(`/invoices/debts/${id}/`),
   credits: (params?: Record<string, string>) => api.get('/invoices/credits/', { params }),
   createCredit: (data: Record<string, unknown>) => api.post('/invoices/credits/', data),
+  deleteCredit: (id: number) => api.delete(`/invoices/credits/${id}/`),
   // Approvals
   approvals: (params?: Record<string, string>) => api.get('/invoices/approvals/', { params }),
   createApproval: (data: Record<string, unknown>) => api.post('/invoices/approvals/', data),

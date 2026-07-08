@@ -148,10 +148,11 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 class ManualDebtSerializer(serializers.ModelSerializer):
     payer_name = serializers.CharField(source='payer.name', read_only=True)
+    service_type = serializers.ChoiceField(choices=ManualDebt.SERVICE_TYPES, required=False, allow_blank=True, default='')
 
     class Meta:
         model = ManualDebt
-        fields = ['id', 'payer', 'payer_name', 'description', 'amount', 'date', 'notes', 'created_at']
+        fields = ['id', 'payer', 'payer_name', 'description', 'service_type', 'amount', 'date', 'notes', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
