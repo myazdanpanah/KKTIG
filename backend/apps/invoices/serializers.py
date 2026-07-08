@@ -8,7 +8,7 @@ from .models import (
 
 
 class PayerSerializer(serializers.ModelSerializer):
-    balance = serializers.IntegerField(read_only=True, default=0)
+    balance = serializers.SerializerMethodField()
     children_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -20,6 +20,14 @@ class PayerSerializer(serializers.ModelSerializer):
             'is_active', 'balance', 'children_count', 'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def get_balance(self, obj):
+        from django.db.models import Sum
+        from .models import Invoice, Payment
+        company = obj.company
+        inv = Invoice.objects.filter(company=company, payer=obj).aggregate(t=Sum('amount'))['t'] or 0
+        pay = Payment.objects.filter(company=company, payer=obj).aggregate(t=Sum('amount'))['t'] or 0
+        return inv - pay
 
     def get_children_count(self, obj):
         return obj.children.count() if hasattr(obj, 'children') else 0
