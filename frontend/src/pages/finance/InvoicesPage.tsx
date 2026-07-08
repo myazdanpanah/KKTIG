@@ -20,7 +20,7 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState({ status: '', payer: '' })
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ payer: '', invoice_type: '', issue_date: new Date().toISOString().split('T')[0], period_range: '' })
+  const [form, setForm] = useState({ payer: '', invoice_type: '', issue_date: new Date().toISOString().split('T')[0], period_from: '', period_to: '' })
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [expandedItems, setExpandedItems] = useState<Record<number, unknown[]>>({})
 
@@ -32,7 +32,8 @@ export default function InvoicesPage() {
   const [importFileTypeAuto, setImportFileTypeAuto] = useState('')
   const [importPayer, setImportPayer] = useState('')
   const [importItemType, setImportItemType] = useState('')
-  const [importPeriod, setImportPeriod] = useState('')
+  const [importPeriodFrom, setImportPeriodFrom] = useState('')
+  const [importPeriodTo, setImportPeriodTo] = useState('')
   const [importing, setImporting] = useState(false)
   const [generatingId, setGeneratingId] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -57,7 +58,8 @@ export default function InvoicesPage() {
 
   const handleCreate = async () => {
     try {
-      await financeApi.createInvoice({ payer: Number(form.payer), invoice_type: Number(form.invoice_type), issue_date: form.issue_date, period_range: form.period_range })
+      const period_range = [form.period_from, form.period_to].filter(Boolean).join(' - ')
+      await financeApi.createInvoice({ payer: Number(form.payer), invoice_type: Number(form.invoice_type), issue_date: form.issue_date, period_range })
       setShowForm(false)
       load()
     } catch { /* ignore */ }
@@ -86,7 +88,7 @@ export default function InvoicesPage() {
         payer_id: Number(importPayer),
         item_type_id: Number(importItemType),
         issue_date: new Date().toISOString().split('T')[0],
-        period_range: importPeriod,
+        period_range: [importPeriodFrom, importPeriodTo].filter(Boolean).join(' - '),
         file_type: importFileTypeAuto,
         rows: importPreview,
       })
@@ -239,7 +241,10 @@ export default function InvoicesPage() {
                 {itemTypes.map(ty => <option key={ty.id} value={ty.id}>{ty.name}</option>)}
               </select>
               <JalaliDateInput value={form.issue_date} onChange={v => setForm({...form, issue_date: v})} className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
-              <input placeholder={t('invPeriod')} value={form.period_range} onChange={e => setForm({...form, period_range: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
+              <div className="grid grid-cols-2 gap-2">
+                <JalaliDateInput value={form.period_from} onChange={v => setForm({...form, period_from: v})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" placeholder={t('dcFrom')} />
+                <JalaliDateInput value={form.period_to} onChange={v => setForm({...form, period_to: v})} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" placeholder={t('dcTo')} />
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">{t('cancel')}</button>
@@ -327,7 +332,10 @@ export default function InvoicesPage() {
                     <option value="">{t('invSelectType')}</option>
                     {itemTypes.map(ty => <option key={ty.id} value={ty.id}>{ty.name}</option>)}
                   </select>
-                  <input placeholder={t('invPeriod')} value={importPeriod} onChange={e => setImportPeriod(e.target.value)} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <JalaliDateInput value={importPeriodFrom} onChange={v => setImportPeriodFrom(v)} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" placeholder={t('dcFrom')} />
+                    <JalaliDateInput value={importPeriodTo} onChange={v => setImportPeriodTo(v)} className="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700" placeholder={t('dcTo')} />
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <button onClick={() => { setImportPreview(null); setImportSummary(null) }} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">{t('cancel')}</button>
