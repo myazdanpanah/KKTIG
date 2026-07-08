@@ -53,7 +53,20 @@ def payer_list_create(request):
             payers = payers.filter(
                 db_models.Q(name__icontains=search) | db_models.Q(code__icontains=search)
             )
-        return Response(PayerSerializer(payers, many=True).data)
+        # Bulk-compute balances to avoid N+1
+        from django.db.models import Sum as PSum
+        inv_totals = dict(
+            Invoice.objects.filter(company=company)
+            .values('payer_id').annotate(t=PSum('amount')).values_list('payer_id', 't')
+        )
+        pay_totals = dict(
+            Payment.objects.filter(company=company)
+            .values('payer_id').annotate(t=PSum('amount')).values_list('payer_id', 't')
+        )
+        balance_map = {}
+        for pid in set(list(inv_totals.keys()) + list(pay_totals.keys())):
+            balance_map[pid] = (inv_totals.get(pid, 0) or 0) - (pay_totals.get(pid, 0) or 0)
+        return Response(PayerSerializer(payers, many=True, context={'balance_map': balance_map}).data)
     elif request.method == 'POST':
         serializer = PayerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

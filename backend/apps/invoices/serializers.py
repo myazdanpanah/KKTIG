@@ -22,6 +22,10 @@ class PayerSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
     def get_balance(self, obj):
+        balance_map = self.context.get('balance_map', {})
+        if balance_map:
+            return balance_map.get(obj.id, 0)
+        # Fallback for single-object serialization
         from django.db.models import Sum
         from .models import Invoice, Payment
         company = obj.company
