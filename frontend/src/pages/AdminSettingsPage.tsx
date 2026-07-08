@@ -90,6 +90,19 @@ export default function AdminSettingsPage() {
     division: null as number | null,
     team: null as number | null,
     reports_to: null as number | null,
+    nexivo_access: true,
+    finance_access: false,
+    can_view_finance: false,
+    can_pay: false,
+    can_issue: false,
+    can_manage_payers: false,
+    can_delete_history: false,
+    can_delete_payment: false,
+    can_export: false,
+    can_submit: false,
+    can_approve: false,
+    can_edit_template: false,
+    can_manage_settings: false,
   })
 
   useEffect(() => {
@@ -160,7 +173,8 @@ export default function AdminSettingsPage() {
 
   const openCreateModal = () => {
     setEditingUser(null)
-    setForm({ username: '', email: '', first_name: '', last_name: '', role: 'sales', department: '', password: '', company: null, division: null, team: null, reports_to: null })
+    setForm({ username: '', email: '', first_name: '', last_name: '', role: 'sales', department: '', password: '', company: null, division: null, team: null, reports_to: null,
+      nexivo_access: true, finance_access: false, can_view_finance: false, can_pay: false, can_issue: false, can_manage_payers: false, can_delete_history: false, can_delete_payment: false, can_export: false, can_submit: false, can_approve: false, can_edit_template: false, can_manage_settings: false })
     setShowModal(true)
   }
 
@@ -178,6 +192,19 @@ export default function AdminSettingsPage() {
       division: u.division,
       team: u.team,
       reports_to: u.reports_to,
+      nexivo_access: (u as unknown as Record<string, unknown>).nexivo_access !== false,
+      finance_access: (u as unknown as Record<string, unknown>).finance_access === true,
+      can_view_finance: (u as unknown as Record<string, unknown>).can_view_finance === true,
+      can_pay: (u as unknown as Record<string, unknown>).can_pay === true,
+      can_issue: (u as unknown as Record<string, unknown>).can_issue === true,
+      can_manage_payers: (u as unknown as Record<string, unknown>).can_manage_payers === true,
+      can_delete_history: (u as unknown as Record<string, unknown>).can_delete_history === true,
+      can_delete_payment: (u as unknown as Record<string, unknown>).can_delete_payment === true,
+      can_export: (u as unknown as Record<string, unknown>).can_export === true,
+      can_submit: (u as unknown as Record<string, unknown>).can_submit === true,
+      can_approve: (u as unknown as Record<string, unknown>).can_approve === true,
+      can_edit_template: (u as unknown as Record<string, unknown>).can_edit_template === true,
+      can_manage_settings: (u as unknown as Record<string, unknown>).can_manage_settings === true,
     })
     setShowModal(true)
   }
@@ -201,6 +228,19 @@ export default function AdminSettingsPage() {
           division: form.division,
           team: form.team,
           reports_to: form.reports_to,
+          nexivo_access: form.nexivo_access,
+          finance_access: form.finance_access,
+          can_view_finance: form.can_view_finance,
+          can_pay: form.can_pay,
+          can_issue: form.can_issue,
+          can_manage_payers: form.can_manage_payers,
+          can_delete_history: form.can_delete_history,
+          can_delete_payment: form.can_delete_payment,
+          can_export: form.can_export,
+          can_submit: form.can_submit,
+          can_approve: form.can_approve,
+          can_edit_template: form.can_edit_template,
+          can_manage_settings: form.can_manage_settings,
         }
         await api.put(`/auth/users/${editingUser.id}/`, payload)
         toast(t('adminUserUpdated'), 'success')
@@ -221,6 +261,19 @@ export default function AdminSettingsPage() {
           division: form.division,
           team: form.team,
           reports_to: form.reports_to,
+          nexivo_access: form.nexivo_access,
+          finance_access: form.finance_access,
+          can_view_finance: form.can_view_finance,
+          can_pay: form.can_pay,
+          can_issue: form.can_issue,
+          can_manage_payers: form.can_manage_payers,
+          can_delete_history: form.can_delete_history,
+          can_delete_payment: form.can_delete_payment,
+          can_export: form.can_export,
+          can_submit: form.can_submit,
+          can_approve: form.can_approve,
+          can_edit_template: form.can_edit_template,
+          can_manage_settings: form.can_manage_settings,
         })
         toast(t('adminUserCreated'), 'success')
       }
@@ -740,6 +793,35 @@ export default function AdminSettingsPage() {
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminFormDepartment')}</label>
                 <input type="text" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder={t('adminFormDepartmentPlaceholder')} />
+              </div>
+
+              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-3">
+                <p className="text-xs font-bold text-gray-700 dark:text-gray-300">🔒 {t('adminFormFinancePermsTitle')}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    ['can_view_finance', t('permViewFinance')],
+                    ['can_pay', t('permPay')],
+                    ['can_issue', t('permIssue')],
+                    ['can_manage_payers', t('permManagePayers')],
+                    ['can_delete_history', t('permDeleteHistory')],
+                    ['can_delete_payment', t('permDeletePayment')],
+                    ['can_export', t('permExport')],
+                    ['can_submit', t('permSubmit')],
+                    ['can_approve', t('permApprove')],
+                    ['can_edit_template', t('permEditTemplate')],
+                    ['can_manage_settings', t('permManageSettings')],
+                  ] as [string, string][]).map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!(form as Record<string, unknown>)[key]}
+                        onChange={(e) => setForm({ ...form, [key]: e.target.checked } as typeof form)}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-3">

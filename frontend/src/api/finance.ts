@@ -49,9 +49,27 @@ export const financeApi = {
   approvals: (params?: Record<string, string>) => api.get('/invoices/approvals/', { params }),
   createApproval: (data: Record<string, unknown>) => api.post('/invoices/approvals/', data),
   approvalAction: (id: number, action: string, data?: Record<string, unknown>) => api.post(`/invoices/approvals/${id}/${action}/`, data),
-  // Templates
+  // File Templates (DOCX upload + placeholder substitution)
+  fileTemplates: (params?: Record<string, string>) => api.get('/invoices/file-templates/', { params }),
+  fileTemplateDetail: (id: number) => api.get(`/invoices/file-templates/${id}/`),
+  createFileTemplate: (data: FormData) => api.post('/invoices/file-templates/', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  updateFileTemplate: (id: number, data: FormData) => api.put(`/invoices/file-templates/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteFileTemplate: (id: number) => api.delete(`/invoices/file-templates/${id}/`),
+  setDefaultFileTemplate: (id: number) => api.post(`/invoices/file-templates/${id}/set-default/`),
+  renderFileTemplate: (id: number, data: Record<string, unknown>) => api.post(`/invoices/file-templates/${id}/render/`, data, { responseType: 'blob' }),
+  // Report Templates (templates_app)
   templates: (params?: Record<string, string>) => api.get('/finance/templates/', { params }),
+  templateDetail: (id: number) => api.get(`/finance/templates/${id}/`),
   createTemplate: (data: Record<string, unknown>) => api.post('/finance/templates/', data),
   updateTemplate: (id: number, data: Record<string, unknown>) => api.put(`/finance/templates/${id}/`, data),
   deleteTemplate: (id: number) => api.delete(`/finance/templates/${id}/`),
+  setDefaultTemplate: (id: number) => api.post(`/finance/templates/${id}/set-default/`),
+  duplicateTemplate: (id: number) => api.post(`/finance/templates/${id}/duplicate/`),
+  templateDataSchema: () => api.get('/finance/templates/data-schema/'),
+  templatePreview: (data: Record<string, unknown>) => api.post('/finance/templates/preview/', data),
+  // Generated Files Management
+  generatedFiles: (params?: Record<string, string>) => api.get('/invoices/generated-files/', { params }),
+  downloadGeneratedFile: (id: number) => api.get(`/invoices/generated-files/${id}/download/`, { responseType: 'blob' }),
+  softDeleteGeneratedFile: (id: number) => api.post(`/invoices/generated-files/${id}/soft-delete/`),
+  cleanupGeneratedFiles: () => api.post('/invoices/generated-files/cleanup/'),
 }

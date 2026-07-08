@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useTranslation } from '../../utils/i18n'
 import LanguageSwitcher from '../../components/LanguageSwitcher'
-import { LayoutDashboard, Users, FileText, CreditCard, AlertTriangle, CheckCircle, Settings, BookOpen, ArrowRightLeft, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, CreditCard, AlertTriangle, CheckCircle, Settings, BookOpen, ArrowRightLeft, LogOut, X, FileUp, FileCheck } from 'lucide-react'
 
 export default function FinanceShell() {
   const navigate = useNavigate()
@@ -20,6 +20,9 @@ export default function FinanceShell() {
     { path: '/finance/payments', icon: CreditCard, label: t('payments') },
     { path: '/finance/debts', icon: AlertTriangle, label: t('debts') },
     { path: '/finance/approvals', icon: CheckCircle, label: t('approvals') },
+    { path: '/finance/report-designer', icon: BookOpen, label: t('finReportDesigner') },
+    { path: '/finance/file-templates', icon: FileUp, label: t('finFileTemplates') },
+    { path: '/finance/generated-files', icon: FileCheck, label: t('finGeneratedFiles') },
     { path: '/finance/templates', icon: BookOpen, label: t('financeTemplates') },
     { path: '/finance/settings', icon: Settings, label: t('financeSettings') },
   ]

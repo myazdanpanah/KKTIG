@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { financeApi } from '../../api/finance'
-import { Plus, Upload, Download, FileText, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Upload, Download, FileText, ChevronDown, ChevronRight, File } from 'lucide-react'
 import { useTranslation } from '../../utils/i18n'
 import { formatCurrency } from '../../utils/format'
 
@@ -117,7 +117,8 @@ export default function InvoicesPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = fmt === 'excel' ? `invoice_${id}.xlsx` : `invoice_${id}.docx`
+      const ext = fmt === 'excel' ? 'xlsx' : fmt === 'word' ? 'docx' : 'pdf'
+      a.download = `invoice_${id}.${ext}`
       a.click()
       URL.revokeObjectURL(url)
     } catch { /* ignore */ }
@@ -183,6 +184,9 @@ export default function InvoicesPage() {
                       </button>
                       <button onClick={() => handleGenerate(inv.id, 'word')} disabled={generatingId === inv.id} className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="Word">
                         <Download className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleGenerate(inv.id, 'pdf')} disabled={generatingId === inv.id} className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="PDF">
+                        <File className="w-4 h-4" />
                       </button>
                     </div>
                   </td>

@@ -26,6 +26,170 @@ from ..utils import to_persian_digits, today_jalali
 logger = logging.getLogger(__name__)
 
 
+# --- PDF Generation (HTML → PDF via xhtml2pdf) ---
+
+def generate_invoice_pdf(html_content: str) -> io.BytesIO:
+    """
+    Convert an HTML string to PDF using xhtml2pdf (pisa).
+
+    Args:
+        html_content: Full HTML document string (with <html>, <head>, <body>)
+
+    Returns:
+        io.BytesIO with the PDF file bytes.
+        Falls back to returning the raw HTML as a .html file if xhtml2pdf fails.
+    """
+    try:
+        from xhtml2pdf import pisa
+    except ImportError:
+        logger.warning("xhtml2pdf not installed — returning HTML fallback")
+        output = io.BytesIO()
+        output.write(html_content.encode('utf-8'))
+        output.seek(0)
+        return output
+
+    output = io.BytesIO()
+    try:
+        status_code = pisa.CreatePDF(
+            src=html_content,
+            dest=output,
+            encoding='utf-8',
+        )
+        if status_code.err:
+            logger.error(f"xhtml2pdf conversion error: {status_code.err}")
+            # Fallback: return raw HTML
+            output = io.BytesIO()
+            output.write(html_content.encode('utf-8'))
+            output.seek(0)
+            return output
+    except Exception as e:
+        logger.error(f"PDF generation failed: {e}", exc_info=True)
+        output = io.BytesIO()
+        output.write(html_content.encode('utf-8'))
+        output.seek(0)
+        return output
+
+    output.seek(0)
+    return output
+
+
+def generate_notice_html(
+    payer_name: str,
+    letter_number: str,
+    letter_date: str,
+    amount: int,
+    period_range: str,
+    bank_info: dict,
+    template_html: str = '',
+    template_css: str = '',
+) -> str:
+    """
+    Generate HTML for a payment notice (اطلاعیه واریز).
+    """
+    if not template_html:
+        template_html = """
+        <div class="header">اطلاعیه واریز مبلغ</div>
+        <table class="info-table">
+            <tr><td class="label">شماره نامه:</td><td>{{ letter_number }}</td></tr>
+            <tr><td class="label">تاریخ:</td><td>{{ letter_date }}</td></tr>
+            <tr><td class="label">نام پرداختکننده:</td><td>{{ payer_name }}</td></tr>
+            <tr><td class="label">بازه:</td><td>{{ period_range }}</td></tr>
+            <tr><td class="label">مبلغ واریزی:</td><td>{{ amount }} ریال</td></tr>
+        </table>
+        <div class="body">
+            <p>بسمه تعالی</p>
+            <p>احتراماً، بدین وسیله اعلام می‌دارد که مبلغ {{ amount }} ریال بابت {{ period_range }} به حساب شرکت واریز گردید.</p>
+            <p>مشخصات حساب بانکی:</p>
+            <p>بانک {{ bank_name }} - شماره حساب {{ account_number }} - شبا {{ shaba_number }}</p>
+        </div>
+        """
+    if not template_css:
+        template_css = """
+        @page { size: A4; margin: 2cm; }
+        body { font-family: B Nazanin, Tahoma, Arial, sans-serif; direction: rtl; }
+        .header { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 20px; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .info-table td { border: 1px solid #000; padding: 5px; }
+        .info-table .label { background: #f0f0f0; width: 30%; font-weight: bold; }
+        .body { line-height: 2; }
+        """
+    try:
+        from jinja2 import Template
+        rendered = Template(template_html).render(
+            payer_name=payer_name,
+            letter_number=letter_number,
+            letter_date=letter_date,
+            amount=_persian_number_filter(amount),
+            period_range=period_range,
+            bank_name=bank_info.get('bank_name1', ''),
+            account_number=bank_info.get('account_number1', ''),
+            shaba_number=bank_info.get('shaba_number1', ''),
+        )
+    except Exception:
+        rendered = f"<p>اطلاعیه واریز - {payer_name} - مبلغ {_persian_number_filter(amount)} ریال</p>"
+    return f"""<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head><meta charset="UTF-8"><style>{template_css}</style></head>
+<body>{rendered}</body>
+</html>"""
+
+
+def generate_creditor_html(
+    payer_name: str,
+    letter_number: str,
+    letter_date: str,
+    amount: int,
+    period_range: str,
+    bank_info: dict,
+    template_html: str = '',
+    template_css: str = '',
+) -> str:
+    """
+    Generate HTML for a creditor notice (بستانکاری).
+    """
+    if not template_html:
+        template_html = """
+        <div class="header">بستانکاری</div>
+        <table class="info-table">
+            <tr><td class="label">شماره نامه:</td><td>{{ letter_number }}</td></tr>
+            <tr><td class="label">تاریخ:</td><td>{{ letter_date }}</td></tr>
+            <tr><td class="label">نام پرداختکننده:</td><td>{{ payer_name }}</td></tr>
+            <tr><td class="label">بازه:</td><td>{{ period_range }}</td></tr>
+            <tr><td class="label">مبلغ بستانکاری:</td><td>{{ amount }} ریال</td></tr>
+        </table>
+        <div class="body">
+            <p>بسمه تعالی</p>
+            <p>احتراماً، بدین وسیله اعلام می‌دارد که شرکت {{ payer_name }} بابت خدمات {{ period_range }} به مبلغ {{ amount }} ریال بستانکار می‌باشد.</p>
+        </div>
+        """
+    if not template_css:
+        template_css = """
+        @page { size: A4; margin: 2cm; }
+        body { font-family: B Nazanin, Tahoma, Arial, sans-serif; direction: rtl; }
+        .header { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 20px; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .info-table td { border: 1px solid #000; padding: 5px; }
+        .info-table .label { background: #f0f0f0; width: 30%; font-weight: bold; }
+        .body { line-height: 2; }
+        """
+    try:
+        from jinja2 import Template
+        rendered = Template(template_html).render(
+            payer_name=payer_name,
+            letter_number=letter_number,
+            letter_date=letter_date,
+            amount=_persian_number_filter(amount),
+            period_range=period_range,
+        )
+    except Exception:
+        rendered = f"<p>بستانکاری - {payer_name} - مبلغ {_persian_number_filter(amount)} ریال</p>"
+    return f"""<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head><meta charset="UTF-8"><style>{template_css}</style></head>
+<body>{rendered}</body>
+</html>"""
+
+
 def _persian_number_filter(value):
     """Format a number with Persian digits and thousand separators."""
     try:

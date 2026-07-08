@@ -209,15 +209,44 @@ class ApprovalRequest(models.Model):
         ordering = ["-created_at"]
 
 
+class FileTemplate(models.Model):
+    """DOCX/HTML templates for document generation with placeholder substitution."""
+    DOC_KINDS = [("invoice", "صورتحساب"), ("notice", "اطلاعیه واریز"), ("creditor", "بستانکاری"), ("letter", "نامه رسمی")]
+    company = models.ForeignKey("accounts.Company", on_delete=models.CASCADE, related_name="file_templates")
+    name = models.CharField(max_length=255)
+    doc_kind = models.CharField(max_length=20, choices=DOC_KINDS)
+    template_file = models.FileField(upload_to="finance/templates/docx/", blank=True, null=True)
+    html_content = models.TextField(blank=True, default="", help_text='HTML template with Jinja2 placeholders')
+    css_content = models.TextField(blank=True, default="")
+    description = models.TextField(blank=True, default="")
+    placeholders = models.JSONField(default=list, blank=True, help_text='List of available {{placeholder}} names')
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+    version = models.IntegerField(default=1)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    objects = TenantManager()
+    class Meta:
+        ordering = ["doc_kind", "name"]
+    def __str__(self):
+        return f"{self.name} ({self.doc_kind}) v{self.version}"
+
+
 class GeneratedFile(models.Model):
     FILE_TYPES = [("invoice", "invoice"), ("notice", "notice"), ("creditor", "creditor")]
-    approval_request = models.ForeignKey(ApprovalRequest, on_delete=models.CASCADE, related_name="files")
+    FILE_FORMATS = [("excel", "Excel"), ("word", "Word"), ("pdf", "PDF"), ("html", "HTML")]
+    approval_request = models.ForeignKey(ApprovalRequest, on_delete=models.CASCADE, related_name="files", null=True, blank=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="generated_files", null=True, blank=True)
     letter_number = models.CharField(max_length=50)
     file_type = models.CharField(max_length=20, choices=FILE_TYPES)
+    file_format = models.CharField(max_length=10, choices=FILE_FORMATS, default="pdf")
     file = models.FileField(upload_to="finance/generated/")
     file_name = models.CharField(max_length=255)
+    file_size = models.BigIntegerField(default=0)
+    generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_accessed = models.DateTimeField(null=True, blank=True)
     is_deleted_from_disk = models.BooleanField(default=False)
     def __str__(self):
-        return f"{self.file_name} ({self.file_type})"
+        return f"{self.file_name} ({self.file_type}/{self.file_format})"

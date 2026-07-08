@@ -21,7 +21,12 @@ urlpatterns = [
     # File Import
     path('import/preview/', views_files.import_excel_preview, name='import-preview'),
     path('import/confirm/', views_files.import_excel_confirm, name='import-confirm'),
-    # Template Management
+    # File Template Management (DOCX upload + placeholder substitution)
+    path('file-templates/', views_files.file_template_list_create, name='file-template-list-create'),
+    path('file-templates/<int:pk>/', views_files.file_template_detail, name='file-template-detail'),
+    path('file-templates/<int:pk>/set-default/', views_files.file_template_set_default, name='file-template-set-default'),
+    path('file-templates/<int:pk>/render/', views_files.file_template_render, name='file-template-render'),
+    # Legacy Template Management
     path('templates/active/', views_files.get_active_template, name='template-active'),
     path('templates/save/', views_files.save_active_template, name='template-save'),
     # Letter Numbering
@@ -35,6 +40,11 @@ urlpatterns = [
     # Approvals
     path('approvals/', views.approval_list_create, name='approval-list-create'),
     path('approvals/<int:pk>/<str:action>/', views.approval_action, name='approval-action'),
+    # Generated Files Management
+    path('generated-files/', views_files.generated_file_list, name='generated-file-list'),
+    path('generated-files/<int:pk>/download/', views_files.generated_file_download, name='generated-file-download'),
+    path('generated-files/<int:pk>/soft-delete/', views_files.generated_file_soft_delete, name='generated-file-soft-delete'),
+    path('generated-files/cleanup/', views_files.generated_file_cleanup, name='generated-file-cleanup'),
     # Dashboard KPIs
     path('dashboard/', views.finance_dashboard, name='finance-dashboard'),
 ]
