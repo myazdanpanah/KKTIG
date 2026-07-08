@@ -5,7 +5,7 @@
  * All internal dates stored on the server remain Gregorian (ISO 8601).
  */
 
-import jalaali from 'jalaali-js'
+import { toGregorian, toJalaali } from 'jalaali-js'
 
 /* ── Jalali → Gregorian ─────────────────────────────────────────── */
 
@@ -17,7 +17,7 @@ export function jalaliToGregorian(jalaliStr: string): string {
   const [jy, jm, jd] = parts.map(Number)
   if (jy < 1000 || jy > 1600 || jm < 1 || jm > 12 || jd < 1 || jd > 31) return jalaliStr
   try {
-    const g = jalaali.toGregorian(jy, jm, jd)
+    const g = toGregorian(jy, jm, jd)
     return `${g.gy}-${String(g.gm).padStart(2, '0')}-${String(g.gd).padStart(2, '0')}`
   } catch {
     return jalaliStr
@@ -29,7 +29,7 @@ export function gregorianToJalali(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date
   if (isNaN(d.getTime())) return ''
   try {
-    const j = jalaali.toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    const j = toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
     return `${j.jy}/${String(j.jm).padStart(2, '0')}/${String(j.jd).padStart(2, '0')}`
   } catch {
     return ''
