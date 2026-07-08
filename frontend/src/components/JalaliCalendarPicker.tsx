@@ -117,7 +117,7 @@ export default function JalaliCalendarPicker({ value, onChange, className = '', 
         id={id}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`${className || 'w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600'} text-left flex items-center justify-between gap-1`}
+        className={`w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 text-left flex items-center justify-between gap-1 ${className}`}
       >
         <span className={displayValue ? '' : 'text-gray-400'} dir="ltr">
           {displayValue ? toPersianDigits(displayValue) : (placeholder || 'انتخاب تاریخ')}
