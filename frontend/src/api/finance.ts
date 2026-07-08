@@ -75,4 +75,9 @@ export const financeApi = {
   downloadGeneratedFile: (id: number) => api.get(`/invoices/generated-files/${id}/download/`, { responseType: 'blob' }),
   softDeleteGeneratedFile: (id: number) => api.post(`/invoices/generated-files/${id}/soft-delete/`),
   cleanupGeneratedFiles: () => api.post('/invoices/generated-files/cleanup/'),
+  // Company Settings
+  companies: () => api.get('/auth/companies/'),
+  createCompany: (data: Record<string, unknown>) => api.post('/auth/companies/', data),
+  updateCompany: (id: number, data: Record<string, unknown>) => api.put(`/auth/companies/${id}/`, data),
+  deleteCompany: (id: number) => api.delete(`/auth/companies/${id}/`),
 }
