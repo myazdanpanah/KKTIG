@@ -46,11 +46,16 @@ class ItemTypeFieldSerializer(serializers.ModelSerializer):
 
 class ItemTypeSerializer(serializers.ModelSerializer):
     fields_schema = ItemTypeFieldSerializer(many=True, read_only=True, source='fields')
+    parent_name = serializers.CharField(source='parent.name', read_only=True, default='')
+    children_count = serializers.SerializerMethodField()
 
     class Meta:
         model = ItemType
-        fields = ['id', 'name', 'code', 'parent', 'is_active', 'display_order', 'fields_schema']
+        fields = ['id', 'name', 'code', 'parent', 'parent_name', 'is_active', 'display_order', 'fields_schema', 'children_count']
         read_only_fields = ['id']
+
+    def get_children_count(self, obj):
+        return obj.children.count() if hasattr(obj, 'children') else 0
 
 
 class ItemFieldValueSerializer(serializers.ModelSerializer):

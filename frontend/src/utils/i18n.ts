@@ -251,6 +251,11 @@ const translations = {
     itemTypesFieldDelete: 'حذف',
     itemTypesFieldsSave: 'ذخیره فیلدها',
     itemTypesDeleteConfirm: 'آیا از حذف اطمینان دارید؟',
+    itemTypesSearch: 'جستجو نام یا کد...',
+    itemTypesExpandAll: 'باز کردن همه',
+    itemTypesCollapseAll: 'بستن همه',
+    itemTypesParentNone: 'بدون والد (ریشه)',
+    itemTypesInactive: 'غیرفعال',
     // LoginPage
     loginUsernamePlaceholder: 'نام کاربری خود را وارد کنید',
     loginPasswordPlaceholder: 'رمز عبور خود را وارد کنید',
@@ -1185,6 +1190,11 @@ const translations = {
     itemTypesFieldDelete: 'Delete',
     itemTypesFieldsSave: 'Save Fields',
     itemTypesDeleteConfirm: 'Are you sure you want to delete?',
+    itemTypesSearch: 'Search name or code...',
+    itemTypesExpandAll: 'Expand All',
+    itemTypesCollapseAll: 'Collapse All',
+    itemTypesParentNone: 'No parent (root)',
+    itemTypesInactive: 'Inactive',
     // LoginPage
     loginUsernamePlaceholder: 'Enter your username',
     loginPasswordPlaceholder: 'Enter your password',
