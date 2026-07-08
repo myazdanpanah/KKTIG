@@ -26,6 +26,14 @@ def _company(user):
     return get_user_company(user)
 
 
+def _payer_balance(payer, company):
+    """Compute balance for a single payer."""
+    from django.db.models import Sum as PSum
+    inv = Invoice.objects.filter(company=company, payer=payer).aggregate(t=PSum('amount'))['t'] or 0
+    pay = Payment.objects.filter(company=company, payer=payer).aggregate(t=PSum('amount'))['t'] or 0
+    return inv - pay
+
+
 # ---- Payer CRUD ----
 
 @api_view(['GET', 'POST'])
@@ -85,7 +93,7 @@ def payer_tree(request):
             'id': payer.id,
             'code': payer.code,
             'name': payer.name,
-            'balance': payer.balance,
+            'balance': _payer_balance(payer, company),
             'children': [build_tree(c) for c in children],
         }
     return Response([build_tree(p) for p in roots])
@@ -369,7 +377,26 @@ def finance_dashboard(request):
         total_amount=Sum('amount'),
         monthly_amount=Sum('amount', filter=Q(payment_date__gte=month_start)),
     )
-    total_receivable = sum(p.balance for p in payers if p.balance > 0)
+    # Compute balance per payer: invoices_total - payments_total
+    from django.db.models import Sum as PSum
+    payer_inv_totals = dict(
+        Invoice.objects.filter(company=company)
+        .values('payer_id')
+        .annotate(t=PSum('amount'))
+        .values_list('payer_id', 't')
+    )
+    payer_pay_totals = dict(
+        Payment.objects.filter(company=company)
+        .values('payer_id')
+        .annotate(t=PSum('amount'))
+        .values_list('payer_id', 't')
+    )
+    payer_balances = {}
+    for p in payers:
+        inv = payer_inv_totals.get(p.id, 0) or 0
+        pay = payer_pay_totals.get(p.id, 0) or 0
+        payer_balances[p.id] = inv - pay
+    total_receivable = sum(b for b in payer_balances.values() if b > 0)
     total_invoiced = invoices_agg['total_amount'] or 0
     total_paid = payments_agg['total_amount'] or 0
     monthly_invoiced = invoices_agg['monthly_amount'] or 0
@@ -380,11 +407,12 @@ def finance_dashboard(request):
     credits_total = Credit.objects.filter(company=company).aggregate(t=Sum('amount'))['t'] or 0
     debts_total = ManualDebt.objects.filter(company=company).aggregate(t=Sum('amount'))['t'] or 0
 
-    # Top debtors (efficient - only positive balances)
-    top_debtors = [
-        {'name': p.name, 'code': p.code, 'balance': p.balance}
-        for p in payers.filter(balance__gt=0).order_by('-balance')[:10]
-    ]
+    # Top debtors (positive balances)
+    top_debtors = sorted(
+        [{'name': p.name, 'code': p.code, 'balance': payer_balances.get(p.id, 0)}
+         for p in payers if payer_balances.get(p.id, 0) > 0],
+        key=lambda x: x['balance'], reverse=True
+    )[:10]
 
     # Recent invoices (last 5)
     recent_invoices = [

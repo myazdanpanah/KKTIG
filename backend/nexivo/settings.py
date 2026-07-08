@@ -106,7 +106,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
-CORS_ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000']
+CORS_ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3000']
 CORS_ALLOW_CREDENTIALS = True
 
 JWT_SECRET = config('SECRET_KEY', default=SECRET_KEY)
